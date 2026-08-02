@@ -9156,6 +9156,24 @@ function RPG_buildContextMemo() {
         if (quests.active.length > 3) lines.push(`  (+${quests.active.length - 3} more)`);
     }
 
+    // ── Critical HP / MP flags ───────────────────────────────────
+    // Only the AI sees these — no notification banner.
+    // They guide the narrative tone without breaking immersion.
+    if (!cheats.systemAnomaly) {
+        // HP thresholds (anomaly path skips — they can't take conventional damage)
+        if (s.hp.cur <= Math.floor(s.hp.max * 0.25)) {
+            lines.push(`[CRITICAL HP: ${s.hp.cur}/${s.hp.max}] The player is on the verge of death. Write genuine physical desperation — laboured breathing, failing strength, every movement an effort. One more serious hit could end this.`);
+        } else if (s.hp.cur <= Math.floor(s.hp.max * 0.5)) {
+            lines.push(`[LOW HP: ${s.hp.cur}/${s.hp.max}] The player is significantly hurt. Reflect wounds and fatigue in the narration. They are still fighting but feeling it.`);
+        }
+    }
+    // MP thresholds apply to all paths
+    if (s.mp.cur <= Math.floor(s.mp.max * 0.25)) {
+        lines.push(`[CRITICAL MP: ${s.mp.cur}/${s.mp.max}] The player's mana is nearly gone. Reflect magical exhaustion — shaking hands, difficulty concentrating, spells becoming unreliable or costly.`);
+    } else if (s.mp.cur <= Math.floor(s.mp.max * 0.5)) {
+        lines.push(`[LOW MP: ${s.mp.cur}/${s.mp.max}] The player's mana reserves are running low. Magic should feel harder to sustain.`);
+    }
+
     // ── Origin behavioral context ────────────────────────────────
     if (p.origin === "isekai_reincarnation") {
         lines.push("[ORIGIN] Player died on Earth and was reborn here in a new body. Full Earth memories intact. Understands this world's rules but thinks like an outsider. Earth knowledge and references are valid internal context.");
@@ -9437,3 +9455,235 @@ function RPG_updateQuestCard() {
 }
 
 // ── End of Quest Engine ──────────────────────────────────────────
+
+// ================================================================
+// SYSTEM UPDATE ENGINE
+// Karma, Skills, Titles, Achievements, Companions,
+// Class Evolution, XP/Leveling, HP/MP
+// All driven by AI-appended tags parsed by output.js
+// ================================================================
+
+// ── KARMA ────────────────────────────────────────────────────────
+
+function RPG_adjustKarma(amount) {
+    const oldLabel = RPG_karmaLabel();
+    RPG.karma = Math.max(-100, Math.min(100, RPG.karma + amount));
+    const newLabel = RPG_karmaLabel();
+    if (oldLabel !== newLabel) {
+        RPG_notify(RPG_HR);
+        RPG_notify(`☯  ALIGNMENT SHIFT`);
+        RPG_notify(`   ${oldLabel} → ${newLabel}`);
+        RPG_notify(RPG_HR);
+    }
+}
+
+// ── SKILLS ───────────────────────────────────────────────────────
+
+function RPG_addSkill(name, rank, desc) {
+    if (!name) return;
+    if (RPG.skills.find(s => s.name.toLowerCase() === name.toLowerCase())) return;
+    RPG.skills.push({ name, rank: rank || "F", desc: desc || "" });
+    RPG_notify(RPG_HR);
+    RPG_notify(`⚔  NEW SKILL LEARNED: ${name} (Rank ${rank || "F"})`);
+    if (desc) RPG_notify(`   ${desc}`);
+    RPG_notify(RPG_HR);
+}
+
+function RPG_rankUpSkill(name, newRank) {
+    const skill = RPG.skills.find(s => s.name.toLowerCase() === name.toLowerCase());
+    if (!skill || !newRank) return;
+    const old = skill.rank;
+    skill.rank = newRank;
+    RPG_notify(RPG_HR);
+    RPG_notify(`⚔  SKILL RANKED UP: ${name}  ${old} → ${newRank}`);
+    RPG_notify(RPG_HR);
+}
+
+// ── TITLES ───────────────────────────────────────────────────────
+
+function RPG_awardTitle(name, desc) {
+    if (!name) return;
+    if (RPG.titles.find(t => t.name.toLowerCase() === name.toLowerCase())) return;
+    RPG.titles.push({ name, desc: desc || "" });
+    RPG_notify(RPG_HR);
+    RPG_notify(`🏅 TITLE EARNED`);
+    RPG_notify(`   【${name}】`);
+    if (desc) RPG_notify(`   ${desc}`);
+    RPG_notify(RPG_HR);
+}
+
+// ── ACHIEVEMENTS ─────────────────────────────────────────────────
+
+function RPG_unlockAchievement(name, desc) {
+    if (!name) return;
+    if (RPG.achievements.find(a => a.name.toLowerCase() === name.toLowerCase())) return;
+    RPG.achievements.push({ name, desc: desc || "" });
+    RPG_notify(RPG_HR);
+    RPG_notify(`🏆 ACHIEVEMENT UNLOCKED`);
+    RPG_notify(`   ★ ${name}`);
+    if (desc) RPG_notify(`   ${desc}`);
+    RPG_notify(RPG_HR);
+}
+
+// ── COMPANIONS ───────────────────────────────────────────────────
+
+function RPG_addCompanion(name, cls, notes) {
+    if (!name) return;
+    if (RPG.companions.find(c => c.name.toLowerCase() === name.toLowerCase())) return;
+    RPG.companions.push({ name, class: cls || "", loyalty: 50, notes: notes || "" });
+    RPG_notify(RPG_HR);
+    RPG_notify(`👥 ${name} HAS JOINED YOUR PARTY`);
+    if (cls) RPG_notify(`   Class: ${cls}`);
+    RPG_notify(RPG_HR);
+}
+
+function RPG_removeCompanion(name) {
+    if (!name) return;
+    const idx = RPG.companions.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+    if (idx === -1) return;
+    RPG.companions.splice(idx, 1);
+    RPG_notify(RPG_HR);
+    RPG_notify(`👥 ${name} HAS LEFT YOUR PARTY`);
+    RPG_notify(RPG_HR);
+}
+
+// ── CLASS EVOLUTION ──────────────────────────────────────────────
+
+function RPG_evolveClass(newClass, newTier) {
+    if (!newClass) return;
+    const old = RPG.class.name || "Unclassed";
+    RPG.class.name = newClass;
+    RPG.class.tier = parseInt(newTier) || RPG.class.tier + 1;
+    RPG.class.guildRank = RPG_guildRankFromLevel(RPG.stats.level);
+    RPG.player.startingClass = newClass;
+    RPG.player.classRevealPending = false;
+    RPG_notify(RPG_HR);
+    RPG_notify(`⚔  CLASS EVOLUTION`);
+    RPG_notify(`   ${old} → ${newClass}`);
+    RPG_notify(RPG_HR);
+}
+
+// ── XP & LEVELING ────────────────────────────────────────────────
+
+function RPG_addXP(amount) {
+    if (RPG.cheats.systemAnomaly || amount <= 0) return;
+    RPG.stats.xp += amount;
+    while (RPG.stats.xp >= RPG.stats.xpNext) {
+        RPG.stats.xp     -= RPG.stats.xpNext;
+        RPG.stats.level  += 1;
+        RPG.stats.xpNext  = RPG.stats.level * 100;
+        RPG.stats.points += 3;
+        RPG.stats.hp.max += 5;
+        RPG.stats.mp.max += 3;
+        RPG.stats.hp.cur  = RPG.stats.hp.max;
+        RPG.stats.mp.cur  = RPG.stats.mp.max;
+        RPG.class.guildRank = RPG_guildRankFromLevel(RPG.stats.level);
+        RPG_notify(RPG_HR);
+        RPG_notify(`⬆  LEVEL UP!  You are now Level ${RPG.stats.level}`);
+        RPG_notify(`   +3 Stat Points  |  HP & MP fully restored`);
+        if (RPG.stats.points > 3) RPG_notify(`   Total unspent points: ${RPG.stats.points}`);
+        RPG_notify(RPG_HR);
+    }
+}
+
+// ── HP & MP ──────────────────────────────────────────────────────
+
+function RPG_adjustHP(amount) {
+    RPG.stats.hp.cur = Math.max(0, Math.min(RPG.stats.hp.max, RPG.stats.hp.cur + amount));
+}
+
+function RPG_adjustMP(amount) {
+    RPG.stats.mp.cur = Math.max(0, Math.min(RPG.stats.mp.max, RPG.stats.mp.cur + amount));
+}
+
+// ── UNIFIED TAG PARSER ───────────────────────────────────────────
+// Called once per turn by output.js.
+// Scans the AI's output for all system tags and processes them.
+// Returns true if any tag was found.
+
+function RPG_parseSystemTags(text) {
+    let found = false;
+
+    // [KARMA:+10] or [KARMA:-15]
+    const km = text.match(/\[KARMA:([-+]?\d+)\]/i);
+    if (km) { RPG_adjustKarma(parseInt(km[1])); found = true; }
+
+    // [SKILL:add:Name|Rank|Description] or [SKILL:rank:Name|NewRank]
+    const sk = text.match(/\[SKILL:(add|rank):([^\]]+)\]/i);
+    if (sk) {
+        const parts = sk[2].split("|");
+        if (sk[1].toLowerCase() === "add") {
+            RPG_addSkill((parts[0]||"").trim(), (parts[1]||"F").trim(), (parts[2]||"").trim());
+        } else {
+            RPG_rankUpSkill((parts[0]||"").trim(), (parts[1]||"").trim());
+        }
+        found = true;
+    }
+
+    // [TITLE:Name|Description]
+    const ti = text.match(/\[TITLE:([^\]]+)\]/i);
+    if (ti) {
+        const parts = ti[1].split("|");
+        RPG_awardTitle((parts[0]||"").trim(), (parts[1]||"").trim());
+        found = true;
+    }
+
+    // [ACH:Name|Description]
+    const ac = text.match(/\[ACH:([^\]]+)\]/i);
+    if (ac) {
+        const parts = ac[1].split("|");
+        RPG_unlockAchievement((parts[0]||"").trim(), (parts[1]||"").trim());
+        found = true;
+    }
+
+    // [COMPANION:add:Name|Class|Notes] or [COMPANION:remove:Name]
+    const co = text.match(/\[COMPANION:(add|remove):([^\]]+)\]/i);
+    if (co) {
+        const parts = co[2].split("|");
+        if (co[1].toLowerCase() === "add") {
+            RPG_addCompanion((parts[0]||"").trim(), (parts[1]||"").trim(), (parts[2]||"").trim());
+        } else {
+            RPG_removeCompanion((parts[0]||"").trim());
+        }
+        found = true;
+    }
+
+    // [EVOLVE:NewClassName|Tier]
+    const ev = text.match(/\[EVOLVE:([^\]]+)\]/i);
+    if (ev) {
+        const parts = ev[1].split("|");
+        RPG_evolveClass((parts[0]||"").trim(), parts[1]);
+        found = true;
+    }
+
+    // [XP:+N]
+    const xp = text.match(/\[XP:([-+]?\d+)\]/i);
+    if (xp) { RPG_addXP(parseInt(xp[1])); found = true; }
+
+    // [HP:±N]
+    const hp = text.match(/\[HP:([-+]?\d+)\]/i);
+    if (hp) { RPG_adjustHP(parseInt(hp[1])); found = true; }
+
+    // [MP:±N]
+    const mp = text.match(/\[MP:([-+]?\d+)\]/i);
+    if (mp) { RPG_adjustMP(parseInt(mp[1])); found = true; }
+
+    return found;
+}
+
+// Strip all system tags from visible text after processing
+function RPG_stripSystemTags(text) {
+    return text
+        .replace(/\s*\[KARMA:[^\]]*\]/gi,     "")
+        .replace(/\s*\[SKILL:[^\]]*\]/gi,      "")
+        .replace(/\s*\[TITLE:[^\]]*\]/gi,      "")
+        .replace(/\s*\[ACH:[^\]]*\]/gi,        "")
+        .replace(/\s*\[COMPANION:[^\]]*\]/gi,  "")
+        .replace(/\s*\[EVOLVE:[^\]]*\]/gi,     "")
+        .replace(/\s*\[XP:[^\]]*\]/gi,         "")
+        .replace(/\s*\[HP:[^\]]*\]/gi,         "")
+        .replace(/\s*\[MP:[^\]]*\]/gi,         "")
+        .trimEnd();
+}
+
+// ── End of System Update Engine ──────────────────────────────────
