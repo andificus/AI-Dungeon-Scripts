@@ -2,11 +2,12 @@
 InnerSelf("output");
 const modifier = (text) => {
 
-    // ── ECONOMY & QUEST TAG PROCESSING ───────────────────────────
-    // If the AI appended [LOOT:] or [QUEST:] tags, parse them,
-    // update state and story cards, then strip from visible text.
-    // The player never sees the raw tags.
+    // ── TAG PROCESSING ───────────────────────────────────────────
+    // Scan for all system update tags the AI may have appended.
+    // Parse them, update state and story cards, then strip from
+    // visible text. Players never see the raw tags.
 
+    // Economy tags — update inventory story card if found
     if (text.includes("[LOOT:")) {
         if (RPG_parseLootTag(text)) {
             RPG_updateInventoryCard();
@@ -14,10 +15,29 @@ const modifier = (text) => {
         }
     }
 
+    // Quest tags — update quest story card if found
     if (text.includes("[QUEST:")) {
         if (RPG_parseQuestTag(text)) {
             text = text.replace(/\s*\[QUEST:[^\]]*\]/gi, "").trimEnd();
         }
+    }
+
+    // All other system tags — karma, skills, titles, achievements,
+    // companions, class evolution, XP, HP, MP
+    const hasSystemTag = (
+        text.includes("[KARMA:")     ||
+        text.includes("[SKILL:")     ||
+        text.includes("[TITLE:")     ||
+        text.includes("[ACH:")       ||
+        text.includes("[COMPANION:") ||
+        text.includes("[EVOLVE:")    ||
+        text.includes("[XP:")        ||
+        text.includes("[HP:")        ||
+        text.includes("[MP:")
+    );
+    if (hasSystemTag) {
+        RPG_parseSystemTags(text);
+        text = RPG_stripSystemTags(text);
     }
 
     // ── COMMAND OUTPUT ───────────────────────────────────────────
