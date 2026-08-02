@@ -1,8 +1,7 @@
 // Your "Output" tab should look like this
+InnerSelf("output");
 const modifier = (text) => {
-  // Your other output modifier scripts go here (preferred)
-  text = AutoCards("output", text);
-  // Your other output modifier scripts go here (alternative)
-  return {text};
+  // Any other output modifier scripts can go here
+  return { text };
 };
 modifier(text);
