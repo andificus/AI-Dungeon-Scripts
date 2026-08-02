@@ -8796,12 +8796,6 @@ function AutoCards(inHook, inText, inStop) {
 // Your other library scripts go here
 
 // ================================================================
-// SYSTEM ANOMALY — LitRPG Engine v0.1
-// Compatible with Inner-Self v1.0.2 + Auto-Cards by LewdLeah ❤️
-// Built by Andificus
-// ================================================================
-
-// ================================================================
 // SYSTEM ANOMALY — LitRPG Engine v0.2
 // Compatible with Inner-Self v1.0.2 + Auto-Cards by LewdLeah ❤️
 // Built by Andificus
@@ -8835,8 +8829,8 @@ state.RPG = RPG_merge(state.RPG || {}, {
  
     cheats: {
         systemAnomaly: false,
-        greatSage:     false,
-        economyBypass: false
+        greatSage:     false
+        // economyBypass removed — preserves LitRPG economy integrity
     },
  
     stats: {
@@ -8875,7 +8869,13 @@ function RPG_detectFromContext(contextText) {
         const tag = cheatMatch[1].toLowerCase();
         RPG.cheats.systemAnomaly = tag.includes("anomaly") || tag === "all";
         RPG.cheats.greatSage     = tag.includes("sage")    || tag === "all";
-        RPG.cheats.economyBypass = tag.includes("economy") || tag === "all";
+    }
+ 
+    // ── Origin tag detection ─────────────────────────────────────
+    // Origin is now set by the Level 1 button click via [ORIGIN:X] tag
+    const originMatch = contextText.match(/\[ORIGIN:([\w_]+)\]/i);
+    if (originMatch) {
+        RPG.player.origin = originMatch[1].toLowerCase();
     }
  
     // ── Character field extraction ───────────────────────────────
@@ -8916,23 +8916,17 @@ function RPG_detectFromContext(contextText) {
         }
     }
  
-    // ── Origin detection ─────────────────────────────────────────
-    const origin = extract("Origin").toLowerCase();
-    if      (origin.includes("1") || origin.includes("reincarnation"))  RPG.player.origin = "isekai_reincarnation";
-    else if (origin.includes("2") || origin.includes("transmigration")) RPG.player.origin = "isekai_transmigration";
-    else if (origin.includes("3") || origin.includes("late"))           RPG.player.origin = "native_latebloomer";
-    else if (origin.includes("4") || origin.includes("awakened"))       RPG.player.origin = "native_awakened";
+    // Origin is set via [ORIGIN:X] tag above — no typed input needed
  
     // ── Mark setup complete ──────────────────────────────────────
     RPG.setup.complete  = true;
     RPG.class.guildRank = "F";
  
     // Queue startup notifications
-    if (RPG.cheats.systemAnomaly || RPG.cheats.greatSage || RPG.cheats.economyBypass) {
+    if (RPG.cheats.systemAnomaly || RPG.cheats.greatSage) {
         RPG_notify(RPG_HR);
         if (RPG.cheats.systemAnomaly) RPG_notify("⚠  ANOMALY DETECTED — Level: [∞]");
         if (RPG.cheats.greatSage)     RPG_notify("🧠 GREAT SAGE — ONLINE");
-        if (RPG.cheats.economyBypass) RPG_notify("💰 INFINITE SYNTHESIS WRIT — BOUND");
         RPG_notify(RPG_HR);
     }
 }
@@ -9042,10 +9036,7 @@ function RPG_formatSkills() {
 function RPG_formatInventory() {
     const inv   = RPG.inventory;
     const lines = [RPG_HR, "🎒 INVENTORY", RPG_HR];
-    lines.push(RPG.cheats.economyBypass
-        ? "💰 Infinite Synthesis Writ [ACTIVE] — No coin tracking"
-        : `💰 Gold: ${inv.gold}   Silver: ${inv.silver}   Copper: ${inv.copper}`
-    );
+    lines.push(`💰 Gold: ${inv.gold}   Silver: ${inv.silver}   Copper: ${inv.copper}`);
     lines.push(RPG_HR);
     if (!inv.items.length) lines.push("[ Spatial storage is empty ]");
     else inv.items.forEach(it => lines.push(`${it.name} x${it.qty}${it.desc ? `\n  ${it.desc}` : ""}`));
@@ -9157,6 +9148,18 @@ function RPG_buildContextMemo() {
         if (quests.active.length > 3) lines.push(`  (+${quests.active.length - 3} more)`);
     }
  
+    // ── Origin behavioral context ────────────────────────────────
+    if (p.origin === "isekai_reincarnation") {
+        lines.push("[ORIGIN] Player died on Earth and was reborn here in a new body. Full Earth memories intact. Understands this world's rules but thinks like an outsider. Earth knowledge and references are valid internal context.");
+    } else if (p.origin === "isekai_transmigration") {
+        lines.push("[ORIGIN] Player was physically pulled from Earth with their original body — no death, no warning. More disoriented than reincarnation. No local history or relationships. May still have Earth belongings on them.");
+    } else if (p.origin === "native_latebloomer") {
+        lines.push("[ORIGIN] Player is a native in their 30s with a full personal history — hometown, relationships, former occupation. The System activating this late is suspicious to guild officials. They know local culture completely and have no Earth past.");
+    } else if (p.origin === "native_awakened") {
+        lines.push("[ORIGIN] Player is a native who lived normally until the System activated without warning or reason. WHY it chose them is an unanswered mystery — treat it as an ongoing narrative thread. No Earth past.");
+    }
+ 
+    // ── Active cheat blocks ──────────────────────────────────────
     if (cheats.systemAnomaly) {
         lines.push("[SYSTEM ANOMALY — ACTIVE]");
         lines.push("This player's power is completely unquantifiable. All Appraisal-type skills shatter on contact. The player is immune to all conventional damage. Any enemy who reads their level sees [ERROR] or [∞].");
@@ -9167,13 +9170,7 @@ function RPG_buildContextMemo() {
         lines.push("The player has an Omniscient AI Assistant called Great Sage. It interjects into narration using [Great Sage: ...] callouts with tactical analysis, enemy level readings, and strategic observations. Precise, analytical, slightly clinical in tone.");
     }
  
-    if (cheats.economyBypass) {
-        lines.push("[ECONOMY BYPASS — ACTIVE]");
-        lines.push("The player holds an Infinite Synthesis Writ. They never track gold, silver, or copper. Any purchase — no matter how large — is simply fulfilled.");
-    }
- 
     return lines.join("\n");
 }
  
 // ── End of System Anomaly RPG Engine ────────────────────────────
- 
