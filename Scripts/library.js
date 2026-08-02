@@ -8804,10 +8804,7 @@ function AutoCards(inHook, inText, inStop) {
 // ================================================================
 
 // ── STATE INITIALIZATION ────────────────────────────────────────
-// Merges into state.RPG so player data survives between turns.
-// Uses RPG_ prefix on all functions to avoid conflicts with
-// Inner-Self (state.InnerSelf / IS.) and Auto-Cards (state.AutoCards / AC.)
-
+ 
 function RPG_merge(target, source) {
     for (const key in source) {
         if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
@@ -8819,279 +8816,109 @@ function RPG_merge(target, source) {
     }
     return target;
 }
-
+ 
 state.RPG = RPG_merge(state.RPG || {}, {
-
-    // ── Setup tracking ──────────────────────────────────────────
-    setup: {
-        complete: false,    // Has character creation finished?
-        step: 0             // Which setup question are we on?
-    },
-
-    // ── Player identity ─────────────────────────────────────────
+    setup: { complete: false },
+ 
     player: {
-        name: "",
-        gender: "",
-        race: "",
-        appearance: "",
-        personality: "",
-        origin: "",             // isekai_reincarnation | isekai_transmigration
-                                // native_latebloomer   | native_awakened
-        pastLife: "",           // Isekai only — job/life on Earth
-        formerOccupation: "",   // Native only — what they did before adventuring
-        worldTone: "",          // Comedic | Grimdark | Heroic | Balanced
-        startingLocation: "",
-        startingClass: "",
-        classRevealPending: false  // True if player chose "Evaluate In-Game"
+        name: "", gender: "", race: "",
+        appearance: "", personality: "",
+        origin: "",
+        pastLife: "", formerOccupation: "",
+        worldTone: "", startingLocation: "",
+        startingClass: "", classRevealPending: false
     },
-
-    // ── Cheat toggles ───────────────────────────────────────────
+ 
     cheats: {
-        systemAnomaly: false,   // Level ∞ — immune to damage, appraisal breaks
-        greatSage: false,       // Omniscient AI assistant in your head
-        economyBypass: false    // Infinite Synthesis Writ — money is meaningless
+        systemAnomaly: false,
+        greatSage:     false,
+        economyBypass: false
     },
-
-    // ── Core stats ──────────────────────────────────────────────
+ 
     stats: {
-        level: 1,
-        xp: 0,
-        xpNext: 100,
-        hp:  { cur: 100, max: 100 },
-        mp:  { cur: 50,  max: 50  },
+        level: 1, xp: 0, xpNext: 100,
+        hp: { cur: 100, max: 100 },
+        mp: { cur: 50,  max: 50  },
         str: 10, agi: 10, int: 10,
         wis: 10, vit: 10, luk: 10,
-        points: 0   // Unspent stat points
+        points: 0
     },
-
-    // ── Class & rank ────────────────────────────────────────────
-    class: {
-        name: "",
-        guildRank: "F",     // Public-facing rank: F → E → D → C → B → A → S
-        tier: 1             // Internal evolution tier
-    },
-
-    // ── Collections ─────────────────────────────────────────────
-    // skills:       { name, rank, desc }
-    // titles:       { name, desc }
-    // achievements: { name, desc }
-    // items:        { name, qty, desc }
-    // quests:       { name, objective, progress, goal }
-    // companions:   { name, class, loyalty, notes }
-    // factions:     { name, standing }
-    // bestiary:     { name, threat, notes }
-    skills:       [],
-    titles:       [],
-    achievements: [],
-
-    inventory: {
-        gold: 0, silver: 0, copper: 0,
-        items: []
-    },
-
-    quests: {
-        active:    [],
-        completed: []
-    },
-
-    karma: 0,   // -100 (Demon Lord) ←→ +100 (Divine Savior)
-
-    companions: [],
-    factions:   [],
-    bestiary:   [],
-
-    // ── Notification queue ──────────────────────────────────────
-    // RPG_notify() adds to this. output.js reads and clears it.
-    notifications: []
+ 
+    class: { name: "", guildRank: "F", tier: 1 },
+ 
+    skills: [], titles: [], achievements: [],
+    inventory: { gold: 0, silver: 0, copper: 0, items: [] },
+    quests: { active: [], completed: [] },
+    karma: 0,
+    companions: [], factions: [], bestiary: [],
+    notifications: [],
+    commandOutput: null
 });
-
-// Shorthand reference — rebuilt each turn from persistent state
+ 
 const RPG = state.RPG;
-
+ 
 // ================================================================
-// SETUP PARSER
-// input.js calls RPG_parseSetupInput(text) each turn while
-// setup.complete is false. Returns true if input was consumed
-// (so input.js knows not to pass it to the AI this turn).
+// FIRST-TURN DETECTION
+// Reads the Character Creator's filled-in opening text from context
+// to extract cheat selection and character details automatically.
+// Called by context.js on the first turn only.
 // ================================================================
-
-const RPG_SETUP_STEPS = [
-    "origin",           // 0
-    "name",             // 1
-    "gender",           // 2
-    "race",             // 3
-    "appearance",       // 4
-    "personality",      // 5
-    "background",       // 6 — pastLife (isekai) or formerOccupation (native)
-    "startingClass",    // 7
-    "startingLocation", // 8
-    "worldTone",        // 9
-    "cheatAnomaly",     // 10
-    "cheatSage",        // 11
-    "cheatEconomy"      // 12 — triggers RPG_completeSetup()
-];
-
-function RPG_currentStep() {
-    return RPG_SETUP_STEPS[RPG.setup.step] || "done";
-}
-
-function RPG_parseSetupInput(text) {
-    if (RPG.setup.complete) return false;
-
-    const t     = text.trim();
-    const lower = t.toLowerCase();
-    const p     = RPG.player;
-    const step  = RPG_currentStep();
-
-    if (step === "origin") {
-        // Strict matching only — keywords must be the primary content,
-        // not just present somewhere in a longer text
-        if      (lower === "1" || lower === "reincarnation" || lower === "isekai reincarnation") p.origin = "isekai_reincarnation";
-        else if (lower === "2" || lower === "transmigration" || lower === "isekai transmigration") p.origin = "isekai_transmigration";
-        else if (lower === "3" || lower === "late bloomer" || lower === "native late bloomer") p.origin = "native_latebloomer";
-        else if (lower === "4" || lower === "awakened" || lower === "native awakened") p.origin = "native_awakened";
-        else return false; // Unrecognized — don't advance, let player try again
-
-    } else if (step === "name")       { p.name = t; }
-    else if (step === "gender")       { p.gender = t; }
-    else if (step === "race")         { p.race = t; }
-    else if (step === "appearance")   { p.appearance = t; }
-    else if (step === "personality")  { p.personality = t; }
-
-    else if (step === "background") {
-        if (p.origin.startsWith("isekai")) p.pastLife = t;
-        else p.formerOccupation = t;
-
-    } else if (step === "startingClass") {
-        if (lower.includes("evaluate") || lower.includes("in-game") || lower.includes("discover")) {
-            p.startingClass      = "Unknown";
-            p.classRevealPending = true;
-            RPG.class.name       = "Unknown";
-        } else {
-            p.startingClass = t;
-            RPG.class.name  = t;
-        }
-
-    } else if (step === "startingLocation") { p.startingLocation = t; }
-
-    else if (step === "worldTone") {
-        if      (lower.includes("1") || lower.includes("comedic"))  p.worldTone = "Comedic";
-        else if (lower.includes("2") || lower.includes("grimdark")) p.worldTone = "Grimdark";
-        else if (lower.includes("3") || lower.includes("heroic"))   p.worldTone = "Heroic";
-        else if (lower.includes("4") || lower.includes("balanced")) p.worldTone = "Balanced";
-        else p.worldTone = t;
-
-    } else if (step === "cheatAnomaly") {
-        RPG.cheats.systemAnomaly = RPG_parseBool(lower);
-
-    } else if (step === "cheatSage") {
-        RPG.cheats.greatSage = RPG_parseBool(lower);
-
-    } else if (step === "cheatEconomy") {
-        RPG.cheats.economyBypass = RPG_parseBool(lower);
-        RPG_completeSetup();
-        return true;
+ 
+function RPG_detectFromContext(contextText) {
+    // ── Cheat detection ──────────────────────────────────────────
+    const cheatMatch = contextText.match(/\[CHEATS:([\w+]+)\]/i);
+    if (cheatMatch) {
+        const tag = cheatMatch[1].toLowerCase();
+        RPG.cheats.systemAnomaly = tag.includes("anomaly") || tag === "all";
+        RPG.cheats.greatSage     = tag.includes("sage")    || tag === "all";
+        RPG.cheats.economyBypass = tag.includes("economy") || tag === "all";
     }
-
-    RPG.setup.step++;
-    return true;
-}
-
-// Interprets yes / no / enable / disable answers
-function RPG_parseBool(lower) {
-    return (
-        lower === "yes" || lower === "y" ||
-        lower === "enable" || lower === "on" || lower === "true"
-    );
-}
-
-// Called once when the final cheat toggle is answered
-function RPG_completeSetup() {
+ 
+    // ── Character field extraction ───────────────────────────────
+    const extract = (key) => {
+        const match = contextText.match(new RegExp(key + ":\\s*(.+)", "i"));
+        return match ? match[1].trim() : "";
+    };
+ 
+    RPG.player.name         = extract("Name");
+    RPG.player.race         = extract("Race");
+    RPG.player.worldTone    = extract("World Tone");
+ 
+    const cls = extract("Class");
+    if (cls.toLowerCase().includes("evaluate") || cls.toLowerCase().includes("in-game")) {
+        RPG.player.startingClass  = "Unknown";
+        RPG.player.classRevealPending = true;
+        RPG.class.name = "Unknown";
+    } else {
+        RPG.player.startingClass = cls;
+        RPG.class.name = cls;
+    }
+ 
+    // ── Origin detection ─────────────────────────────────────────
+    const origin = extract("Origin").toLowerCase();
+    if      (origin.includes("reincarnation"))  RPG.player.origin = "isekai_reincarnation";
+    else if (origin.includes("transmigration")) RPG.player.origin = "isekai_transmigration";
+    else if (origin.includes("late bloomer") || origin.includes("late"))   RPG.player.origin = "native_latebloomer";
+    else if (origin.includes("awakened"))       RPG.player.origin = "native_awakened";
+ 
+    // ── Mark setup complete ──────────────────────────────────────
     RPG.setup.complete  = true;
     RPG.class.guildRank = "F";
-
-    RPG_notify(RPG_HR);
-    RPG_notify("⚡ SYSTEM INITIALIZATION COMPLETE");
-    if (RPG.cheats.systemAnomaly) RPG_notify("⚠  ANOMALY DETECTED — Level: [∞] — Unquantifiable");
-    if (RPG.cheats.greatSage)     RPG_notify("🧠 GREAT SAGE — ONLINE");
-    if (RPG.cheats.economyBypass) RPG_notify("💰 INFINITE SYNTHESIS WRIT — BOUND TO BEARER");
-    RPG_notify("Welcome, " + RPG.player.name + ". Your legend begins now.");
-    RPG_notify(RPG_HR);
+ 
+    // Queue startup notifications
+    if (RPG.cheats.systemAnomaly || RPG.cheats.greatSage || RPG.cheats.economyBypass) {
+        RPG_notify(RPG_HR);
+        if (RPG.cheats.systemAnomaly) RPG_notify("⚠  ANOMALY DETECTED — Level: [∞]");
+        if (RPG.cheats.greatSage)     RPG_notify("🧠 GREAT SAGE — ONLINE");
+        if (RPG.cheats.economyBypass) RPG_notify("💰 INFINITE SYNTHESIS WRIT — BOUND");
+        RPG_notify(RPG_HR);
+    }
 }
-
-// ================================================================
-// SETUP PROMPTS
-// context.js injects these to guide the player through each step.
-// Returns a string shown at the top of the AI's context that turn.
-// ================================================================
-
-function RPG_setupPrompt() {
-    const step = RPG_currentStep();
-    const p    = RPG.player;
-
-    const map = {
-        origin: [
-            "[SYSTEM INITIALIZATION — ORIGIN SELECTION]",
-            "Choose your origin:",
-            "  1. Isekai — Reincarnation  (died on Earth, reborn in this world)",
-            "  2. Isekai — Transmigration (pulled from Earth with your body intact)",
-            "  3. Native — Late Bloomer   (born here; finally registering at the guild in your 30s)",
-            "  4. Native — Awakened       (born here; System suddenly activated with no warning)",
-            ">> Type a number or keyword."
-        ],
-        name:             ["[SYSTEM] Enter your name:"],
-        gender:           ["[SYSTEM] Enter your gender:"],
-        race:             ["[SYSTEM] Enter your race or species: (e.g. Human, Elf, Slime, Undead)"],
-        appearance:       ["[SYSTEM] Describe your appearance:"],
-        personality:      ["[SYSTEM] Describe your personality: (e.g. Stoic, Arrogant, Lazy, Cheerful)"],
-        background: p.origin.startsWith("isekai")
-            ? ["[SYSTEM] What was your profession or occupation on Earth?"]
-            : ["[SYSTEM] What was your occupation before you registered as an adventurer?"],
-        startingClass: [
-            "[SYSTEM] Choose your starting class:",
-            "(Type a class name, or type 'Evaluate In-Game' to have it revealed",
-            " dramatically at a guild registration crystal)"
-        ],
-        startingLocation: [
-            "[SYSTEM] Choose your starting location:",
-            "(e.g. Dungeon, Forest, Royal Capital, Remote Village, Abandoned Ruins)"
-        ],
-        worldTone: [
-            "[SYSTEM] Choose your World Tone:",
-            "  1. Comedic  — Absurd situations, humor, self-aware moments",
-            "  2. Grimdark — Brutal consequences, moral ambiguity, high stakes",
-            "  3. Heroic   — Epic battles, clear good vs evil, triumph",
-            "  4. Balanced — Shifts naturally with the story"
-        ],
-        cheatAnomaly: [
-            "[SYSTEM — OPTIONAL CHEAT]",
-            "Enable The System Anomaly (Level: ∞)?",
-            "Your power becomes unquantifiable. Appraisal skills shatter.",
-            "You are immune to all conventional damage.",
-            ">> Yes / No"
-        ],
-        cheatSage: [
-            "[SYSTEM — OPTIONAL CHEAT]",
-            "Enable The Omniscient AI Assistant (Great Sage)?",
-            "A hyper-intelligent tactical voice lives in your mind,",
-            "delivering threat analysis and strategic advice mid-narration.",
-            ">> Yes / No"
-        ],
-        cheatEconomy: [
-            "[SYSTEM — OPTIONAL CHEAT]",
-            "Enable The Economy Bypass (Infinite Synthesis Writ)?",
-            "You never track coin. Any purchase is simply fulfilled.",
-            ">> Yes / No"
-        ]
-    };
-
-    return (map[step] || []).join("\n");
-}
-
+ 
 // ================================================================
 // KARMA
 // ================================================================
-
+ 
 function RPG_karmaLabel() {
     const k = RPG.karma;
     if (k >= 80)  return "Divine Savior";
@@ -9104,18 +8931,18 @@ function RPG_karmaLabel() {
     if (k > -80)  return "Cataclysmic Demon Lord";
     return "Apocalyptic God of Destruction";
 }
-
+ 
 function RPG_karmaBar() {
     const k      = Math.max(-100, Math.min(100, RPG.karma));
     const filled = Math.round((k + 100) / 20);
     const bar    = "█".repeat(filled) + "░".repeat(10 - filled);
     return `[${bar}] ${k >= 0 ? "+" : ""}${k}`;
 }
-
+ 
 // ================================================================
 // GUILD RANK
 // ================================================================
-
+ 
 function RPG_guildRankFromLevel(level) {
     if (level >= 80) return "S";
     if (level >= 60) return "A";
@@ -9125,32 +8952,29 @@ function RPG_guildRankFromLevel(level) {
     if (level >= 5)  return "E";
     return "F";
 }
-
+ 
 // ================================================================
 // NOTIFICATIONS
-// RPG_notify() queues messages. output.js flushes and displays them.
 // ================================================================
-
+ 
 function RPG_notify(msg) {
     (RPG.notifications = RPG.notifications || []).push(msg);
 }
-
+ 
 function RPG_flushNotifications() {
     const pending     = RPG.notifications || [];
     RPG.notifications = [];
     return pending;
 }
-
+ 
 // ================================================================
 // DISPLAY FORMATTERS
-// Called by input.js slash command handler.
-// Each returns a formatted string shown to the player.
 // ================================================================
-
+ 
 const RPG_HR = "══════════════════════════════════";
-
+ 
 function RPG_pad(n) { return String(n).padStart(3); }
-
+ 
 function RPG_originLabel() {
     const labels = {
         isekai_reincarnation:  "Isekai — Reincarnation",
@@ -9160,7 +8984,7 @@ function RPG_originLabel() {
     };
     return labels[RPG.player.origin] || "Unknown";
 }
-
+ 
 function RPG_formatStats() {
     const { stats: s, player: p, class: c, cheats } = RPG;
     const lvl = cheats.systemAnomaly ? "∞" : s.level;
@@ -9179,12 +9003,12 @@ function RPG_formatStats() {
         RPG_HR,
         `STR ${RPG_pad(s.str)}  AGI ${RPG_pad(s.agi)}  INT ${RPG_pad(s.int)}`,
         `WIS ${RPG_pad(s.wis)}  VIT ${RPG_pad(s.vit)}  LUK ${RPG_pad(s.luk)}`,
-        s.points > 0      ? `\n⬆  Unspent Stat Points: ${s.points}`         : "",
-        cheats.systemAnomaly ? "⚠  [ANOMALY ACTIVE] — Appraisal disabled"    : "",
+        s.points > 0         ? `\n⬆  Unspent Stat Points: ${s.points}`      : "",
+        cheats.systemAnomaly ? "⚠  [ANOMALY ACTIVE] — Appraisal disabled"   : "",
         RPG_HR
     ].filter(Boolean).join("\n");
 }
-
+ 
 function RPG_formatSkills() {
     const lines = [RPG_HR, "⚔  SKILLS", RPG_HR];
     if (!RPG.skills.length) lines.push("[ No skills learned yet ]");
@@ -9192,7 +9016,7 @@ function RPG_formatSkills() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatInventory() {
     const inv   = RPG.inventory;
     const lines = [RPG_HR, "🎒 INVENTORY", RPG_HR];
@@ -9206,7 +9030,7 @@ function RPG_formatInventory() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatQuests() {
     const lines = [RPG_HR, "📜 QUEST LOG", RPG_HR];
     if (!RPG.quests.active.length) {
@@ -9224,7 +9048,7 @@ function RPG_formatQuests() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatTitles() {
     const lines = [RPG_HR, "🏅 TITLES", RPG_HR];
     if (!RPG.titles.length) lines.push("[ No titles earned yet ]");
@@ -9232,7 +9056,7 @@ function RPG_formatTitles() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatAchievements() {
     const lines = [RPG_HR, "🏆 ACHIEVEMENTS", RPG_HR];
     if (!RPG.achievements.length) lines.push("[ No achievements unlocked yet ]");
@@ -9240,11 +9064,11 @@ function RPG_formatAchievements() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatKarma() {
     return [RPG_HR, "☯  KARMA ALIGNMENT", RPG_HR, RPG_karmaBar(), RPG_karmaLabel(), RPG_HR].join("\n");
 }
-
+ 
 function RPG_formatParty() {
     const lines = [RPG_HR, "👥 PARTY", RPG_HR];
     if (!RPG.companions.length) {
@@ -9259,7 +9083,7 @@ function RPG_formatParty() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
-
+ 
 function RPG_formatHelp() {
     return [
         RPG_HR, "❓ COMMANDS", RPG_HR,
@@ -9275,32 +9099,26 @@ function RPG_formatHelp() {
         RPG_HR
     ].join("\n");
 }
-
+ 
 // ================================================================
 // CONTEXT MEMO BUILDER
-// Called every turn by context.js.
-// Builds a compact block the AI reads each turn to stay consistent.
-// Only injects what is active — dormant cheats cost zero tokens.
 // ================================================================
-
+ 
 function RPG_buildContextMemo() {
     if (!RPG.setup.complete) return "";
-
+ 
     const { player: p, stats: s, class: c, cheats, karma, quests } = RPG;
     const lines = [];
-
-    // ── Core identity — always present ──────────────────────────
+ 
     lines.push("[PLAYER]");
-    lines.push(`Name: ${p.name} | Race: ${p.race} | Gender: ${p.gender}`);
+    lines.push(`Name: ${p.name} | Race: ${p.race}`);
     lines.push(`Origin: ${RPG_originLabel()}`);
     if (p.pastLife)         lines.push(`Past Life on Earth: ${p.pastLife}`);
     if (p.formerOccupation) lines.push(`Former Occupation: ${p.formerOccupation}`);
     lines.push(`Class: ${c.name || "Unclassed"} | Guild Rank: ${c.guildRank} | Level: ${cheats.systemAnomaly ? "∞" : s.level}`);
-    lines.push(`Personality: ${p.personality}`);
     lines.push(`Karma: ${RPG_karmaLabel()} (${karma >= 0 ? "+" : ""}${karma})`);
     lines.push(`World Tone: ${p.worldTone}`);
-
-    // ── Active quests — compact, capped at 3 ────────────────────
+ 
     if (quests.active.length) {
         lines.push("[ACTIVE QUESTS]");
         quests.active.slice(0, 3).forEach(q => {
@@ -9309,24 +9127,23 @@ function RPG_buildContextMemo() {
         });
         if (quests.active.length > 3) lines.push(`  (+${quests.active.length - 3} more)`);
     }
-
-    // ── Cheat blocks — only injected if that cheat is ON ────────
+ 
     if (cheats.systemAnomaly) {
         lines.push("[SYSTEM ANOMALY — ACTIVE]");
-        lines.push("This player's power is completely unquantifiable. All Appraisal-type skills shatter the moment they scan the player. The player is immune to all conventional damage. Any enemy who reads their level sees [ERROR] or [∞].");
+        lines.push("This player's power is completely unquantifiable. All Appraisal-type skills shatter on contact. The player is immune to all conventional damage. Any enemy who reads their level sees [ERROR] or [∞].");
     }
-
+ 
     if (cheats.greatSage) {
         lines.push("[GREAT SAGE — ACTIVE]");
         lines.push("The player has an Omniscient AI Assistant called Great Sage. It interjects into narration using [Great Sage: ...] callouts with tactical analysis, enemy level readings, and strategic observations. Precise, analytical, slightly clinical in tone.");
     }
-
+ 
     if (cheats.economyBypass) {
         lines.push("[ECONOMY BYPASS — ACTIVE]");
-        lines.push("The player holds an Infinite Synthesis Writ. They never track gold, silver, or copper. Any purchase — no matter how large — is simply fulfilled without price negotiation or payment tracking.");
+        lines.push("The player holds an Infinite Synthesis Writ. They never track gold, silver, or copper. Any purchase — no matter how large — is simply fulfilled.");
     }
-
+ 
     return lines.join("\n");
 }
-
+ 
 // ── End of System Anomaly RPG Engine ────────────────────────────
