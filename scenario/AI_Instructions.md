@@ -22,3 +22,21 @@ Examples:
   Player loots a chest (mixed): [LOOT:gold:+2,silver:+15,item:Lockpick:+3]
 
 Always append the tag for: combat loot, shop purchases, shop sales, quest rewards, inn/tavern payments, service fees, found treasure, gambling results, and any other exchange of currency or items.
+
+QUESTS — QUEST TAGS: Whenever a quest is accepted, progressed, or completed, append a [QUEST:] tag at the very end of your response after all narrative text. The scripts will parse it, update the quest log automatically, and remove the tag from displayed text.
+
+Formats:
+  Quest accepted:  [QUEST:new:Quest Name|Objective description|goal number]
+  Quest progress:  [QUEST:progress:Quest Name|+amount]
+  Quest complete:  [QUEST:done:Quest Name|reward description]
+
+For goal number: use the numeric target if trackable (kill 10 goblins = 10), or 0 if not trackable (deliver a letter = 0).
+
+Examples:
+  Player accepts a kill quest: [QUEST:new:Goblin Culling|Kill goblins threatening the southern road|10]
+  Player kills 3 goblins: [QUEST:progress:Goblin Culling|+3]
+  Player turns in the quest: [QUEST:done:Goblin Culling|2 silver]
+  Player accepts a delivery quest: [QUEST:new:The Merchant's Letter|Deliver the sealed letter to Lord Aldric|0]
+  Player delivers the letter: [QUEST:done:The Merchant's Letter|5 silver and a room for the night]
+
+Always use the exact quest name consistently across new, progress, and done tags. Only one quest tag per response. If multiple quests are affected, use the most significant one.
