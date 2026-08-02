@@ -1,1 +1,1 @@
-
+[Author's note: Write in second person. Match the player's chosen World Tone — Comedic means lean into absurdity and self-aware humor; Grimdark means brutal consequences and moral weight; Heroic means epic stakes and triumphant moments; Balanced means shift naturally with the scene. NPCs react realistically to the player's power level — guards panic, mages stammer, monsters flee, veteran adventurers reassess everything they know. The world is vast and consistent. Show don't tell. Vary sentence rhythm. End scenes at moments of tension or curiosity.]
