@@ -51,7 +51,7 @@ globalThis.MainSettings = (class MainSettings {
     // (1, 2, or 3)
     ,
     // What (maximum) percentage of "Recent Story" context should be repurposed for NPC brains?
-    PERCENTAGE_OF_RECENT_STORY_USED_FOR_BRAINS: 30
+    PERCENTAGE_OF_RECENT_STORY_USED_FOR_BRAINS: 20
     // (1 to 95)
     ,
     // How many actions back should Inner Self look for character name triggers?
@@ -79,11 +79,11 @@ globalThis.MainSettings = (class MainSettings {
     // (true or false)
     ,
     // Is the "Configure Inner Self" story card pinned near the top of the in-game list?
-    IS_CONFIG_CARD_PINNED_BY_DEFAULT: false
+    IS_CONFIG_CARD_PINNED_BY_DEFAULT: true
     // (true or false)
     ,
     // Is AC already enabled when the adventure begins?
-    IS_AC_ENABLED_BY_DEFAULT: false
+    IS_AC_ENABLED_BY_DEFAULT: true
     // (true or false)
     ,
     }; //——————————————————————————————————————————————————————————————————————————————
@@ -192,7 +192,7 @@ globalThis.MainSettings = (class MainSettings {
     ,
     // Titles banned from future card generation attempts?
     DEFAULT_BANNED_TITLES_LIST: (
-        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December"
+        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December, System, Anomaly, Great Sage, Economy, Synthesis, Writ, Player, Status, Quest, Inventory, Karma, Guild Rank, Level"
     ) // (mimic this comma-list "text" format)
     ,
     // Default story card "type" used by Auto-Cards? (does not matter)
