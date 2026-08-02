@@ -8944,10 +8944,12 @@ function RPG_parseSetupInput(text) {
     const step  = RPG_currentStep();
 
     if (step === "origin") {
-        if      (lower.includes("1") || (lower.includes("isekai") && lower.includes("reincarn"))) p.origin = "isekai_reincarnation";
-        else if (lower.includes("2") || (lower.includes("isekai") && lower.includes("transmig"))) p.origin = "isekai_transmigration";
-        else if (lower.includes("3") || lower.includes("late bloomer") || lower.includes("bloomer")) p.origin = "native_latebloomer";
-        else if (lower.includes("4") || lower.includes("awaken"))  p.origin = "native_awakened";
+        // Strict matching only — keywords must be the primary content,
+        // not just present somewhere in a longer text
+        if      (lower === "1" || lower === "reincarnation" || lower === "isekai reincarnation") p.origin = "isekai_reincarnation";
+        else if (lower === "2" || lower === "transmigration" || lower === "isekai transmigration") p.origin = "isekai_transmigration";
+        else if (lower === "3" || lower === "late bloomer" || lower === "native late bloomer") p.origin = "native_latebloomer";
+        else if (lower === "4" || lower === "awakened" || lower === "native awakened") p.origin = "native_awakened";
         else return false; // Unrecognized — don't advance, let player try again
 
     } else if (step === "name")       { p.name = t; }
