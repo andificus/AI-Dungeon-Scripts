@@ -1,5 +1,5 @@
 // ================================================================
-// HOW TO USE THIS FILE
+// HOW TO USE THISde FILE
 // ----------------------------------------------------------------
 // Paste the full contents of Inner-Self's library.js FIRST into
 // the AI Dungeon Library tab, then paste everything below AFTER it.
@@ -190,7 +190,7 @@ globalThis.MainSettings = (class MainSettings {
     ,
     // Titles banned from future card generation attempts?
     DEFAULT_BANNED_TITLES_LIST: (
-        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December, System, Anomaly, Great Sage, Economy, Synthesis, Writ, Player, Status, Quest, Inventory, Karma, Guild Rank, Level"
+        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December, System, Anomaly, Great Sage, Economy, Synthesis, Writ, Player, Status, Quest, Quest Log, Inventory, Karma, Guild Rank, Level"
     ) // (mimic this comma-list "text" format)
     ,
     // Default story card "type" used by Auto-Cards? (does not matter)
