@@ -3,10 +3,9 @@
 // ----------------------------------------------------------------
 // This file contains TWO sections that combine into one Library tab:
 //
-// SECTION 1: Inner-Self by LewdLeah (not included here)
-//   → Copy Inner-Self's full library.js from:
+// SECTION 1: Inner-Self by LewdLeah 
+//   → Copied Inner-Self's full library.js from:
 //     https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
-//   → Paste it FIRST into the AI Dungeon Library tab
 //
 // SECTION 2: System Anomaly RPG Engine (everything below)
 //   → Paste this AFTER Inner-Self's code in the same Library tab
