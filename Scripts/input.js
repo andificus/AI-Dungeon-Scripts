@@ -1,8 +1,7 @@
 // Your "Input" tab should look like this
+InnerSelf("input");
 const modifier = (text) => {
-  // Your other input modifier scripts go here (preferred)
-  text = AutoCards("input", text);
-  // Your other input modifier scripts go here (alternative)
-  return {text};
+  // Any other input modifier scripts can go here
+  return { text };
 };
 modifier(text);
