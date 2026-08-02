@@ -8796,13 +8796,21 @@ function AutoCards(inHook, inText, inStop) {
 // Your other library scripts go here
 
 // ================================================================
+// HOW TO USE THIS FILE
+// ----------------------------------------------------------------
+// Paste the full contents of Inner-Self's library.js FIRST into
+// the AI Dungeon Library tab, then paste everything below AFTER it.
+// https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
+// ================================================================
+
+// ================================================================
 // SYSTEM ANOMALY — LitRPG Engine v0.2
 // Compatible with Inner-Self v1.0.2 + Auto-Cards by LewdLeah ❤️
 // Built by Andificus
 // ================================================================
- 
+
 // ── STATE INITIALIZATION ────────────────────────────────────────
- 
+
 function RPG_merge(target, source) {
     for (const key in source) {
         if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
@@ -8814,10 +8822,10 @@ function RPG_merge(target, source) {
     }
     return target;
 }
- 
+
 state.RPG = RPG_merge(state.RPG || {}, {
     setup: { complete: false },
- 
+
     player: {
         name: "", gender: "", race: "",
         appearance: "", personality: "",
@@ -8826,13 +8834,13 @@ state.RPG = RPG_merge(state.RPG || {}, {
         worldTone: "Gritty High Fantasy / Heroic Adventure", startingLocation: "",
         startingClass: "", classRevealPending: false
     },
- 
+
     cheats: {
         systemAnomaly: false,
         greatSage:     false
         // economyBypass removed — preserves LitRPG economy integrity
     },
- 
+
     stats: {
         level: 1, xp: 0, xpNext: 100,
         hp: { cur: 100, max: 100 },
@@ -8841,9 +8849,9 @@ state.RPG = RPG_merge(state.RPG || {}, {
         wis: 10, vit: 10, luk: 10,
         points: 0
     },
- 
+
     class: { name: "", guildRank: "F", tier: 1 },
- 
+
     skills: [], titles: [], achievements: [],
     inventory: { gold: 0, silver: 0, copper: 0, items: [] },
     quests: { active: [], completed: [] },
@@ -8852,16 +8860,16 @@ state.RPG = RPG_merge(state.RPG || {}, {
     notifications: [],
     commandOutput: null
 });
- 
+
 const RPG = state.RPG;
- 
+
 // ================================================================
 // FIRST-TURN DETECTION
 // Reads the Character Creator's filled-in opening text from context
 // to extract cheat selection and character details automatically.
 // Called by context.js on the first turn only.
 // ================================================================
- 
+
 function RPG_detectFromContext(contextText) {
     // ── Cheat detection ──────────────────────────────────────────
     const cheatMatch = contextText.match(/\[CHEATS:([\w+]+)\]/i);
@@ -8870,24 +8878,24 @@ function RPG_detectFromContext(contextText) {
         RPG.cheats.systemAnomaly = tag.includes("anomaly") || tag === "all";
         RPG.cheats.greatSage     = tag.includes("sage")    || tag === "all";
     }
- 
+
     // ── Origin tag detection ─────────────────────────────────────
     // Origin is now set by the Level 1 button click via [ORIGIN:X] tag
     const originMatch = contextText.match(/\[ORIGIN:([\w_]+)\]/i);
     if (originMatch) {
         RPG.player.origin = originMatch[1].toLowerCase();
     }
- 
+
     // ── Character field extraction ───────────────────────────────
     const extract = (key) => {
         const match = contextText.match(new RegExp(key + ":\\s*(.+)", "i"));
         return match ? match[1].trim() : "";
     };
- 
+
     RPG.player.name = extract("Name");
     RPG.player.race = extract("Race");
     // worldTone is hardcoded by the scenario creator — not extracted from player input
- 
+
     const cls = extract("Class");
     if (cls.toLowerCase().includes("evaluate") || cls.toLowerCase().includes("in-game")) {
         RPG.player.startingClass  = "Unknown";
@@ -8897,7 +8905,7 @@ function RPG_detectFromContext(contextText) {
         RPG.player.startingClass = cls;
         RPG.class.name = cls;
     }
- 
+
     // ── Class detection ──────────────────────────────────────────
     // [CLASS:unknown] tag means cheats path — class revealed in-game
     if (/\[CLASS:unknown\]/i.test(contextText)) {
@@ -8915,13 +8923,13 @@ function RPG_detectFromContext(contextText) {
             RPG.class.name           = cls;
         }
     }
- 
+
     // Origin is set via [ORIGIN:X] tag above — no typed input needed
- 
+
     // ── Mark setup complete ──────────────────────────────────────
     RPG.setup.complete  = true;
     RPG.class.guildRank = "F";
- 
+
     // Queue startup notifications
     if (RPG.cheats.systemAnomaly || RPG.cheats.greatSage) {
         RPG_notify(RPG_HR);
@@ -8930,11 +8938,11 @@ function RPG_detectFromContext(contextText) {
         RPG_notify(RPG_HR);
     }
 }
- 
+
 // ================================================================
 // KARMA
 // ================================================================
- 
+
 function RPG_karmaLabel() {
     const k = RPG.karma;
     if (k >= 80)  return "Divine Savior";
@@ -8947,18 +8955,18 @@ function RPG_karmaLabel() {
     if (k > -80)  return "Cataclysmic Demon Lord";
     return "Apocalyptic God of Destruction";
 }
- 
+
 function RPG_karmaBar() {
     const k      = Math.max(-100, Math.min(100, RPG.karma));
     const filled = Math.round((k + 100) / 20);
     const bar    = "█".repeat(filled) + "░".repeat(10 - filled);
     return `[${bar}] ${k >= 0 ? "+" : ""}${k}`;
 }
- 
+
 // ================================================================
 // GUILD RANK
 // ================================================================
- 
+
 function RPG_guildRankFromLevel(level) {
     if (level >= 80) return "S";
     if (level >= 60) return "A";
@@ -8968,29 +8976,29 @@ function RPG_guildRankFromLevel(level) {
     if (level >= 5)  return "E";
     return "F";
 }
- 
+
 // ================================================================
 // NOTIFICATIONS
 // ================================================================
- 
+
 function RPG_notify(msg) {
     (RPG.notifications = RPG.notifications || []).push(msg);
 }
- 
+
 function RPG_flushNotifications() {
     const pending     = RPG.notifications || [];
     RPG.notifications = [];
     return pending;
 }
- 
+
 // ================================================================
 // DISPLAY FORMATTERS
 // ================================================================
- 
+
 const RPG_HR = "══════════════════════════════════";
- 
+
 function RPG_pad(n) { return String(n).padStart(3); }
- 
+
 function RPG_originLabel() {
     const labels = {
         isekai_reincarnation:  "Isekai — Reincarnation",
@@ -9000,7 +9008,7 @@ function RPG_originLabel() {
     };
     return labels[RPG.player.origin] || "Unknown";
 }
- 
+
 function RPG_formatStats() {
     const { stats: s, player: p, class: c, cheats } = RPG;
     const lvl = cheats.systemAnomaly ? "∞" : s.level;
@@ -9024,7 +9032,7 @@ function RPG_formatStats() {
         RPG_HR
     ].filter(Boolean).join("\n");
 }
- 
+
 function RPG_formatSkills() {
     const lines = [RPG_HR, "⚔  SKILLS", RPG_HR];
     if (!RPG.skills.length) lines.push("[ No skills learned yet ]");
@@ -9032,7 +9040,7 @@ function RPG_formatSkills() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatInventory() {
     const inv   = RPG.inventory;
     const lines = [RPG_HR, "🎒 INVENTORY", RPG_HR];
@@ -9043,7 +9051,7 @@ function RPG_formatInventory() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatQuests() {
     const lines = [RPG_HR, "📜 QUEST LOG", RPG_HR];
     if (!RPG.quests.active.length) {
@@ -9061,7 +9069,7 @@ function RPG_formatQuests() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatTitles() {
     const lines = [RPG_HR, "🏅 TITLES", RPG_HR];
     if (!RPG.titles.length) lines.push("[ No titles earned yet ]");
@@ -9069,7 +9077,7 @@ function RPG_formatTitles() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatAchievements() {
     const lines = [RPG_HR, "🏆 ACHIEVEMENTS", RPG_HR];
     if (!RPG.achievements.length) lines.push("[ No achievements unlocked yet ]");
@@ -9077,11 +9085,11 @@ function RPG_formatAchievements() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatKarma() {
     return [RPG_HR, "☯  KARMA ALIGNMENT", RPG_HR, RPG_karmaBar(), RPG_karmaLabel(), RPG_HR].join("\n");
 }
- 
+
 function RPG_formatParty() {
     const lines = [RPG_HR, "👥 PARTY", RPG_HR];
     if (!RPG.companions.length) {
@@ -9096,7 +9104,7 @@ function RPG_formatParty() {
     lines.push(RPG_HR);
     return lines.join("\n");
 }
- 
+
 function RPG_formatHelp() {
     return [
         RPG_HR, "❓ COMMANDS", RPG_HR,
@@ -9113,17 +9121,17 @@ function RPG_formatHelp() {
         RPG_HR
     ].join("\n");
 }
- 
+
 // ================================================================
 // CONTEXT MEMO BUILDER
 // ================================================================
- 
+
 function RPG_buildContextMemo() {
     if (!RPG.setup.complete) return "";
- 
+
     const { player: p, stats: s, class: c, cheats, karma, quests } = RPG;
     const lines = [];
- 
+
     lines.push("[PLAYER]");
     lines.push(`Name: ${p.name} | Race: ${p.race}`);
     lines.push(`Origin: ${RPG_originLabel()}`);
@@ -9133,12 +9141,12 @@ function RPG_buildContextMemo() {
     lines.push(`Karma: ${RPG_karmaLabel()} (${karma >= 0 ? "+" : ""}${karma})`);
     lines.push(`World Tone: ${p.worldTone}`);
     lines.push(`[SOCIAL] Strangers and NPCs judge the player by Guild Rank ${c.guildRank} only — not their true level or power. React accordingly.`);
- 
+
     // Class pending reminder — AI sees this and knows to prompt player
     if (p.classRevealPending) {
         lines.push("[CLASS PENDING] This player's class has not yet been revealed. When their class is dramatically revealed at a guild crystal or similar event, end that scene with the note: \"Type /setclass [ClassName] to record your class.\"");
     }
- 
+
     if (quests.active.length) {
         lines.push("[ACTIVE QUESTS]");
         quests.active.slice(0, 3).forEach(q => {
@@ -9147,7 +9155,7 @@ function RPG_buildContextMemo() {
         });
         if (quests.active.length > 3) lines.push(`  (+${quests.active.length - 3} more)`);
     }
- 
+
     // ── Origin behavioral context ────────────────────────────────
     if (p.origin === "isekai_reincarnation") {
         lines.push("[ORIGIN] Player died on Earth and was reborn here in a new body. Full Earth memories intact. Understands this world's rules but thinks like an outsider. Earth knowledge and references are valid internal context.");
@@ -9158,19 +9166,154 @@ function RPG_buildContextMemo() {
     } else if (p.origin === "native_awakened") {
         lines.push("[ORIGIN] Player is a native who lived normally until the System activated without warning or reason. WHY it chose them is an unanswered mystery — treat it as an ongoing narrative thread. No Earth past.");
     }
- 
+
     // ── Active cheat blocks ──────────────────────────────────────
     if (cheats.systemAnomaly) {
         lines.push("[SYSTEM ANOMALY — ACTIVE]");
         lines.push("This player's power is completely unquantifiable. All Appraisal-type skills shatter on contact. The player is immune to all conventional damage. Any enemy who reads their level sees [ERROR] or [∞].");
     }
- 
+
     if (cheats.greatSage) {
         lines.push("[GREAT SAGE — ACTIVE]");
         lines.push("The player has an Omniscient AI Assistant called Great Sage. It interjects into narration using [Great Sage: ...] callouts with tactical analysis, enemy level readings, and strategic observations. Precise, analytical, slightly clinical in tone.");
     }
- 
+
     return lines.join("\n");
 }
- 
+
 // ── End of System Anomaly RPG Engine ────────────────────────────
+
+// ================================================================
+// ECONOMY ENGINE
+// ================================================================
+
+// Currency conversion rates
+const RPG_COPPER_PER_SILVER = 100;
+const RPG_SILVER_PER_GOLD   = 100;
+
+// ── Currency math ────────────────────────────────────────────────
+
+function RPG_addCurrency(type, amount) {
+    const inv = RPG.inventory;
+    if      (type === "gold")   inv.gold   += amount;
+    else if (type === "silver") inv.silver += amount;
+    else if (type === "copper") inv.copper += amount;
+    RPG_normalizeCurrency();
+}
+
+function RPG_normalizeCurrency() {
+    const inv = RPG.inventory;
+
+    // Overflow: convert excess copper to silver
+    if (inv.copper >= RPG_COPPER_PER_SILVER) {
+        const gain = Math.floor(inv.copper / RPG_COPPER_PER_SILVER);
+        inv.copper -= gain * RPG_COPPER_PER_SILVER;
+        inv.silver += gain;
+    }
+    // Overflow: convert excess silver to gold
+    if (inv.silver >= RPG_SILVER_PER_GOLD) {
+        const gain = Math.floor(inv.silver / RPG_SILVER_PER_GOLD);
+        inv.silver -= gain * RPG_SILVER_PER_GOLD;
+        inv.gold   += gain;
+    }
+    // Underflow: borrow silver to cover negative copper
+    if (inv.copper < 0) {
+        const borrow = Math.ceil(Math.abs(inv.copper) / RPG_COPPER_PER_SILVER);
+        inv.copper += borrow * RPG_COPPER_PER_SILVER;
+        inv.silver -= borrow;
+    }
+    // Underflow: borrow gold to cover negative silver
+    if (inv.silver < 0) {
+        const borrow = Math.ceil(Math.abs(inv.silver) / RPG_SILVER_PER_GOLD);
+        inv.silver += borrow * RPG_SILVER_PER_GOLD;
+        inv.gold   -= borrow;
+    }
+    // Floor at zero — no debt
+    inv.gold   = Math.max(0, inv.gold);
+    inv.silver = Math.max(0, inv.silver);
+    inv.copper = Math.max(0, inv.copper);
+}
+
+// ── Item tracking ────────────────────────────────────────────────
+
+function RPG_updateItem(name, qty) {
+    const inv = RPG.inventory;
+    const idx = inv.items.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+    if (idx !== -1) {
+        inv.items[idx].qty += qty;
+        if (inv.items[idx].qty <= 0) {
+            inv.items.splice(idx, 1); // Remove if quantity hits zero
+        }
+    } else if (qty > 0) {
+        inv.items.push({ name, qty, desc: "" });
+    }
+}
+
+// ── Loot tag parser ──────────────────────────────────────────────
+// Reads [LOOT:gold:+10,silver:-5,item:Health Potion:+2] from AI output
+// Called by output.js — returns true if a tag was found and parsed
+
+function RPG_parseLootTag(text) {
+    const match = text.match(/\[LOOT:([^\]]+)\]/i);
+    if (!match) return false;
+
+    const parts = match[1].split(",");
+    for (const part of parts) {
+        const segments = part.trim().split(":");
+        if (segments.length < 2) continue;
+
+        const type  = segments[0].toLowerCase().trim();
+        const value = parseInt(segments[segments.length - 1]);
+        if (isNaN(value)) continue;
+
+        if (type === "gold" || type === "silver" || type === "copper") {
+            RPG_addCurrency(type, value);
+        } else if (type === "item" && segments.length >= 3) {
+            // item:Item Name:+N — name may contain colons
+            const itemName = segments.slice(1, segments.length - 1).join(":").trim();
+            RPG_updateItem(itemName, value);
+        }
+    }
+    return true;
+}
+
+// ── Inventory story card updater ─────────────────────────────────
+// Finds or creates the Inventory story card and rewrites its entry
+// Called by output.js after parsing a loot tag
+
+function RPG_updateInventoryCard() {
+    const inv   = RPG.inventory;
+    const lines = [];
+
+    // Coin line
+    const parts = [];
+    if (inv.gold   > 0) parts.push(`${inv.gold}g`);
+    if (inv.silver > 0) parts.push(`${inv.silver}s`);
+    if (inv.copper > 0) parts.push(`${inv.copper}c`);
+    lines.push("Coin: " + (parts.length ? parts.join(" ") : "none"));
+
+    // Items
+    if (inv.items.length) {
+        lines.push("Items:");
+        inv.items.forEach(it => lines.push(`  ${it.name} x${it.qty}`));
+    } else {
+        lines.push("Items: none");
+    }
+
+    const entry = lines.join("\n");
+
+    // Find existing card or create it
+    let card = storyCards.find(c => c.title && c.title.toLowerCase() === "inventory");
+    if (!card) {
+        storyCards.push({
+            title: "Inventory",
+            entry: entry,
+            keys:  "gold,silver,copper,coin,coins,shop,merchant,purchase,buy,sell,loot,reward,inn,tavern,price,payment,treasure,pouch,purse,cost,money",
+            type:  "other"
+        });
+    } else {
+        card.entry = entry;
+    }
+}
+
+// ── End of Economy Engine ────────────────────────────────────────
