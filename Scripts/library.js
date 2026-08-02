@@ -1,17 +1,15 @@
 // ================================================================
 // HOW TO USE THIS FILE
 // ----------------------------------------------------------------
-// This file contains TWO sections that combine into one Library tab:
-//
-// SECTION 1: Inner-Self by LewdLeah 
-//   → Copied Inner-Self's full library.js from:
-//     https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
-//
-// SECTION 2: System Anomaly RPG Engine (everything below)
-//   → Paste this AFTER Inner-Self's code in the same Library tab
-//
-// In the GitHub repo, Scripts/library.js contains both sections
-// combined into one file.
+// Paste the full contents of Inner-Self's library.js FIRST into
+// the AI Dungeon Library tab, then paste everything below AFTER it.
+// https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
+// ================================================================
+ 
+// ================================================================
+// SYSTEM ANOMALY — LitRPG Engine v0.2
+// Compatible with Inner-Self v1.0.2 + Auto-Cards by LewdLeah ❤️
+// Built by Andificus
 // ================================================================
 // Your "Library" tab should look like this
 
@@ -8803,6 +8801,12 @@ function AutoCards(inHook, inText, inStop) {
 // Built by Andificus
 // ================================================================
 
+// ================================================================
+// SYSTEM ANOMALY — LitRPG Engine v0.2
+// Compatible with Inner-Self v1.0.2 + Auto-Cards by LewdLeah ❤️
+// Built by Andificus
+// ================================================================
+ 
 // ── STATE INITIALIZATION ────────────────────────────────────────
  
 function RPG_merge(target, source) {
@@ -8825,7 +8829,7 @@ state.RPG = RPG_merge(state.RPG || {}, {
         appearance: "", personality: "",
         origin: "",
         pastLife: "", formerOccupation: "",
-        worldTone: "", startingLocation: "",
+        worldTone: "Gritty High Fantasy / Heroic Adventure", startingLocation: "",
         startingClass: "", classRevealPending: false
     },
  
@@ -8880,9 +8884,9 @@ function RPG_detectFromContext(contextText) {
         return match ? match[1].trim() : "";
     };
  
-    RPG.player.name         = extract("Name");
-    RPG.player.race         = extract("Race");
-    RPG.player.worldTone    = extract("World Tone");
+    RPG.player.name = extract("Name");
+    RPG.player.race = extract("Race");
+    // worldTone is hardcoded by the scenario creator — not extracted from player input
  
     const cls = extract("Class");
     if (cls.toLowerCase().includes("evaluate") || cls.toLowerCase().includes("in-game")) {
@@ -8894,12 +8898,30 @@ function RPG_detectFromContext(contextText) {
         RPG.class.name = cls;
     }
  
+    // ── Class detection ──────────────────────────────────────────
+    // [CLASS:unknown] tag means cheats path — class revealed in-game
+    if (/\[CLASS:unknown\]/i.test(contextText)) {
+        RPG.player.startingClass      = "Unknown";
+        RPG.player.classRevealPending = true;
+        RPG.class.name                = "Unknown";
+    } else {
+        const cls = extract("Class");
+        if (cls.toLowerCase().includes("evaluate") || cls.toLowerCase().includes("in-game")) {
+            RPG.player.startingClass      = "Unknown";
+            RPG.player.classRevealPending = true;
+            RPG.class.name                = "Unknown";
+        } else if (cls) {
+            RPG.player.startingClass = cls;
+            RPG.class.name           = cls;
+        }
+    }
+ 
     // ── Origin detection ─────────────────────────────────────────
     const origin = extract("Origin").toLowerCase();
-    if      (origin.includes("reincarnation"))  RPG.player.origin = "isekai_reincarnation";
-    else if (origin.includes("transmigration")) RPG.player.origin = "isekai_transmigration";
-    else if (origin.includes("late bloomer") || origin.includes("late"))   RPG.player.origin = "native_latebloomer";
-    else if (origin.includes("awakened"))       RPG.player.origin = "native_awakened";
+    if      (origin.includes("1") || origin.includes("reincarnation"))  RPG.player.origin = "isekai_reincarnation";
+    else if (origin.includes("2") || origin.includes("transmigration")) RPG.player.origin = "isekai_transmigration";
+    else if (origin.includes("3") || origin.includes("late"))           RPG.player.origin = "native_latebloomer";
+    else if (origin.includes("4") || origin.includes("awakened"))       RPG.player.origin = "native_awakened";
  
     // ── Mark setup complete ──────────────────────────────────────
     RPG.setup.complete  = true;
@@ -9087,15 +9109,16 @@ function RPG_formatParty() {
 function RPG_formatHelp() {
     return [
         RPG_HR, "❓ COMMANDS", RPG_HR,
-        "/stats         — Stat screen",
-        "/skills        — Known skills",
-        "/inventory     — Inventory & currency",
-        "/quests        — Quest log",
-        "/titles        — Title collection",
-        "/achievements  — Achievement room",
-        "/karma         — Alignment status",
-        "/party         — Companion status",
-        "/help          — This menu",
+        "/stats              — Stat screen",
+        "/skills             — Known skills",
+        "/inventory          — Inventory & currency",
+        "/quests             — Quest log",
+        "/titles             — Title collection",
+        "/achievements       — Achievement room",
+        "/karma              — Alignment status",
+        "/party              — Companion status",
+        "/setclass [name]    — Record your class after crystal reveal",
+        "/help               — This menu",
         RPG_HR
     ].join("\n");
 }
@@ -9118,6 +9141,12 @@ function RPG_buildContextMemo() {
     lines.push(`Class: ${c.name || "Unclassed"} | Guild Rank: ${c.guildRank} | Level: ${cheats.systemAnomaly ? "∞" : s.level}`);
     lines.push(`Karma: ${RPG_karmaLabel()} (${karma >= 0 ? "+" : ""}${karma})`);
     lines.push(`World Tone: ${p.worldTone}`);
+    lines.push(`[SOCIAL] Strangers and NPCs judge the player by Guild Rank ${c.guildRank} only — not their true level or power. React accordingly.`);
+ 
+    // Class pending reminder — AI sees this and knows to prompt player
+    if (p.classRevealPending) {
+        lines.push("[CLASS PENDING] This player's class has not yet been revealed. When their class is dramatically revealed at a guild crystal or similar event, end that scene with the note: \"Type /setclass [ClassName] to record your class.\"");
+    }
  
     if (quests.active.length) {
         lines.push("[ACTIVE QUESTS]");
@@ -9147,3 +9176,4 @@ function RPG_buildContextMemo() {
 }
  
 // ── End of System Anomaly RPG Engine ────────────────────────────
+ 
