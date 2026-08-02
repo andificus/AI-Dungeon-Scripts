@@ -6,10 +6,23 @@ const modifier = (text) => {
     const lower   = trimmed.toLowerCase();
 
     // ── SLASH COMMANDS ───────────────────────────────────────────
-    // Character creation is now handled by AID's Character Creator.
-    // This tab only needs to handle slash commands during gameplay.
     if (trimmed.startsWith("/")) {
         const cmd = lower.slice(1).trim();
+
+        // /setclass ClassName — records class after in-game crystal reveal
+        if (cmd.startsWith("setclass ")) {
+            const className = trimmed.slice(10).trim(); // slice "/setclass "
+            if (className) {
+                RPG.class.name                = className;
+                RPG.player.startingClass      = className;
+                RPG.player.classRevealPending = false;
+                RPG_notify(RPG_HR);
+                RPG_notify(`⚔  CLASS REGISTERED: ${className}`);
+                RPG_notify("Your stat screen now reflects your true class.");
+                RPG_notify(RPG_HR);
+                return { text: "\u200B" };
+            }
+        }
 
         const commands = {
             "stats":         RPG_formatStats,
@@ -32,10 +45,8 @@ const modifier = (text) => {
             RPG.commandOutput = handler();
             return { text: "\u200B" };
         }
-        // Unrecognized /command — pass through (keeps /ac working)
     }
 
-    // ── NORMAL INPUT ─────────────────────────────────────────────
     return { text };
 };
 modifier(text);
