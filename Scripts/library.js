@@ -9317,3 +9317,123 @@ function RPG_updateInventoryCard() {
 }
 
 // ── End of Economy Engine ────────────────────────────────────────
+
+// ================================================================
+// QUEST ENGINE
+// ================================================================
+
+// ── Quest management ─────────────────────────────────────────────
+
+function RPG_addQuest(name, objective, goal) {
+    const exists = RPG.quests.active.find(q => q.name.toLowerCase() === name.toLowerCase());
+    if (exists) return; // Don't add duplicates
+    RPG.quests.active.push({
+        name:      name,
+        objective: objective,
+        progress:  0,
+        goal:      parseInt(goal) || 0  // 0 means no numeric tracking
+    });
+    RPG_notify(RPG_HR);
+    RPG_notify(`📜 NEW QUEST: ${name}`);
+    RPG_notify(`   ${objective}`);
+    RPG_notify(RPG_HR);
+    RPG_updateQuestCard();
+}
+
+function RPG_updateQuestProgress(name, amount) {
+    const quest = RPG.quests.active.find(q => q.name.toLowerCase() === name.toLowerCase());
+    if (!quest || !quest.goal) return;
+    quest.progress = Math.min(quest.goal, quest.progress + amount);
+    RPG_updateQuestCard();
+
+    // Auto-complete if goal reached
+    if (quest.progress >= quest.goal) {
+        RPG_notify(`✓ QUEST READY: ${quest.name} — return to complete`);
+    }
+}
+
+function RPG_completeQuest(name, reward) {
+    const idx = RPG.quests.active.findIndex(q => q.name.toLowerCase() === name.toLowerCase());
+    if (idx === -1) return;
+    const quest = RPG.quests.active.splice(idx, 1)[0];
+    RPG.quests.completed.push({ name: quest.name });
+    RPG_notify(RPG_HR);
+    RPG_notify(`✓ QUEST COMPLETE: ${quest.name}`);
+    if (reward) RPG_notify(`   Reward: ${reward}`);
+    RPG_notify(RPG_HR);
+    RPG_updateQuestCard();
+}
+
+// ── Quest tag parser ─────────────────────────────────────────────
+// Reads [QUEST:new:Name|Objective|Goal], [QUEST:progress:Name|+N],
+// [QUEST:done:Name|Reward] from AI output.
+// Called by output.js — returns true if a tag was found and parsed.
+
+function RPG_parseQuestTag(text) {
+    const match = text.match(/\[QUEST:([\w]+):([^\]]+)\]/i);
+    if (!match) return false;
+
+    const action = match[1].toLowerCase();
+    const payload = match[2];
+
+    if (action === "new") {
+        // [QUEST:new:Name|Objective|Goal]
+        const parts = payload.split("|");
+        const name      = (parts[0] || "").trim();
+        const objective = (parts[1] || "").trim();
+        const goal      = parseInt(parts[2]) || 0;
+        if (name) RPG_addQuest(name, objective, goal);
+
+    } else if (action === "progress") {
+        // [QUEST:progress:Name|+N]
+        const parts  = payload.split("|");
+        const name   = (parts[0] || "").trim();
+        const amount = parseInt(parts[1]) || 1;
+        if (name) RPG_updateQuestProgress(name, Math.abs(amount));
+
+    } else if (action === "done") {
+        // [QUEST:done:Name|Reward description]
+        const parts  = payload.split("|");
+        const name   = (parts[0] || "").trim();
+        const reward = (parts[1] || "").trim();
+        if (name) RPG_completeQuest(name, reward);
+    }
+
+    return true;
+}
+
+// ── Quest story card updater ─────────────────────────────────────
+
+function RPG_updateQuestCard() {
+    const lines = [];
+
+    if (RPG.quests.active.length) {
+        RPG.quests.active.forEach(q => {
+            const prog = q.goal ? ` (${q.progress}/${q.goal})` : "";
+            lines.push(`▶ ${q.name}${prog}`);
+            if (q.objective) lines.push(`  ${q.objective}`);
+        });
+    } else {
+        lines.push("No active quests.");
+    }
+
+    if (RPG.quests.completed.length) {
+        lines.push(`Completed: ${RPG.quests.completed.length}`);
+    }
+
+    const entry = lines.join("\n");
+
+    let card = storyCards.find(c => c.title && c.title.toLowerCase() === "quest log");
+    if (!card) {
+        storyCards.push({
+            title: "Quest Log",
+            entry: entry,
+            keys:  "quest,mission,objective,bounty,job,contract,assignment,guild board,notice board,reward,complete,accept",
+            type:  "other"
+        });
+    } else {
+        card.entry = entry;
+    }
+}
+
+// ── End of Quest Engine ──────────────────────────────────────────
