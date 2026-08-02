@@ -1,3 +1,19 @@
+// ================================================================
+// HOW TO USE THIS FILE
+// ----------------------------------------------------------------
+// This file contains TWO sections that combine into one Library tab:
+//
+// SECTION 1: Inner-Self by LewdLeah (not included here)
+//   → Copy Inner-Self's full library.js from:
+//     https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
+//   → Paste it FIRST into the AI Dungeon Library tab
+//
+// SECTION 2: System Anomaly RPG Engine (everything below)
+//   → Paste this AFTER Inner-Self's code in the same Library tab
+//
+// In the GitHub repo, Scripts/library.js contains both sections
+// combined into one file.
+// ================================================================
 // Your "Library" tab should look like this
 
 /**
@@ -8781,22 +8797,6 @@ function AutoCards(inHook, inText, inStop) {
 } function isolateLSIv2(code, log, text, stop) { const console = Object.freeze({log}); try { eval(code); return [null, text, stop]; } catch (error) { return [error, text, stop]; } }
 
 // Your other library scripts go here
-// ================================================================
-// HOW TO USE THIS FILE
-// ----------------------------------------------------------------
-// This file contains TWO sections that combine into one Library tab:
-//
-// SECTION 1: Inner-Self by LewdLeah (not included here)
-//   → Copy Inner-Self's full library.js from:
-//     https://github.com/LewdLeah/Inner-Self/blob/main/src/library.js
-//   → Paste it FIRST into the AI Dungeon Library tab
-//
-// SECTION 2: System Anomaly RPG Engine (everything below)
-//   → Paste this AFTER Inner-Self's code in the same Library tab
-//
-// In the GitHub repo, Scripts/library.js contains both sections
-// combined into one file.
-// ================================================================
 
 // ================================================================
 // SYSTEM ANOMALY — LitRPG Engine v0.1
