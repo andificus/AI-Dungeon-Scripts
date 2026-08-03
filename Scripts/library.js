@@ -8827,7 +8827,7 @@ state.RPG = RPG_merge(state.RPG || {}, {
     setup: { complete: false },
 
     player: {
-        name: "", gender: "", race: "",
+        name: "", gender: "", race: "", age: "",
         appearance: "", personality: "",
         origin: "",
         pastLife: "", formerOccupation: "",
@@ -8892,8 +8892,16 @@ function RPG_detectFromContext(contextText) {
         return match ? match[1].trim() : "";
     };
 
-    RPG.player.name = extract("Name");
-    RPG.player.race = extract("Race");
+    RPG.player.name        = extract("Name");
+    RPG.player.race        = extract("Race");
+    RPG.player.age         = extract("Age");
+    RPG.player.appearance  = extract("Appearance");
+    RPG.player.personality = extract("Personality");
+    // Past Life (Isekai) or Occupation (Native) — whichever is present
+    const pastLife   = extract("Past Life");
+    const occupation = extract("Occupation");
+    if (pastLife)   RPG.player.pastLife         = pastLife;
+    if (occupation) RPG.player.formerOccupation = occupation;
     // worldTone is hardcoded by the scenario creator — not extracted from player input
 
     const cls = extract("Class");
@@ -9133,8 +9141,10 @@ function RPG_buildContextMemo() {
     const lines = [];
 
     lines.push("[PLAYER]");
-    lines.push(`Name: ${p.name} | Race: ${p.race}`);
+    lines.push(`Name: ${p.name} | Race: ${p.race} | Gender: ${p.gender}${p.age ? " | Age: " + p.age : ""}`);
     lines.push(`Origin: ${RPG_originLabel()}`);
+    if (p.appearance)       lines.push(`Appearance: ${p.appearance}`);
+    if (p.personality)      lines.push(`Personality: ${p.personality}`);
     if (p.pastLife)         lines.push(`Past Life on Earth: ${p.pastLife}`);
     if (p.formerOccupation) lines.push(`Former Occupation: ${p.formerOccupation}`);
     lines.push(`Class: ${c.name || "Unclassed"} | Guild Rank: ${c.guildRank} | Level: ${cheats.systemAnomaly ? "∞" : s.level}`);
