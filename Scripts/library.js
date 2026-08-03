@@ -8861,8 +8861,8 @@ state.RPG = RPG_merge(state.RPG || {}, {
     commandOutput: null
 });
 
-// Make RPG globally accessible across all script tabs
-globalThis.RPG = state.RPG;
+// var hoists RPG to global scope in AID's eval environment
+var RPG = state.RPG;
 
 // ================================================================
 // FIRST-TURN DETECTION
