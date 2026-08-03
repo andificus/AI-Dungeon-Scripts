@@ -8896,6 +8896,12 @@ function RPG_detectFromContext(contextText) {
     RPG.player.race        = extract("Race");
     RPG.player.age         = extract("Age");
     RPG.player.appearance  = extract("Appearance");
+
+    // Transmigration locks race to Human — their Earth body arrived unchanged
+    const raceTag = contextText.match(/\[RACE:([\w\s]+)\]/i);
+    if (raceTag) {
+        RPG.player.race = raceTag[1].trim();
+    }
     RPG.player.personality = extract("Personality");
     // Past Life (Isekai) or Occupation (Native) — whichever is present
     const pastLife   = extract("Past Life");
