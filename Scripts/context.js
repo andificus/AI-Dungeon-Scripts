@@ -6,48 +6,48 @@ const modifier = (text) => {
     if (!state.RPG) return { text, stop };
 
     // ── SLASH COMMAND HANDLING ───────────────────────────────────
-    // Context.js is reliable — we detect slash commands here and
-    // inject the panel as a mandatory instruction to the AI.
-    // This works without needing to intercept the output.
-    if (history && history.length > 0) {
-        const last   = history[history.length - 1];
-        const action = (last.text || last.input || last.rawText || "").trim();
-        const sidx   = action.indexOf("/");
+    // Read the current action from state.RPG.currentAction
+    // (set by input.js this same turn — more reliable than history)
+    const currentAction = (state.RPG.currentAction || "").trim();
+    const sidx = currentAction.indexOf("/");
 
-        if (sidx !== -1) {
-            const afterSlash = action.slice(sidx + 1).replace(/[.,!?\s]+$/, "");
-            const lower = afterSlash.toLowerCase();
+    if (sidx !== -1) {
+        const afterSlash = currentAction.slice(sidx + 1).replace(/[.,!?\s]+$/, "");
+        const lower = afterSlash.toLowerCase();
 
-            if (!lower.startsWith("setclass") && !lower.startsWith("ac")) {
-                const cmd = afterSlash.split(/[\s.,!?]/)[0].toLowerCase();
+        if (!lower.startsWith("setclass") && !lower.startsWith("ac")) {
+            const cmd = afterSlash.split(/[\s.,!?]/)[0].toLowerCase();
 
-                const commands = {
-                    "stats":         RPG_formatStats,
-                    "skills":        RPG_formatSkills,
-                    "inventory":     RPG_formatInventory,
-                    "inv":           RPG_formatInventory,
-                    "quests":        RPG_formatQuests,
-                    "quest":         RPG_formatQuests,
-                    "titles":        RPG_formatTitles,
-                    "title":         RPG_formatTitles,
-                    "achievements":  RPG_formatAchievements,
-                    "ach":           RPG_formatAchievements,
-                    "karma":         RPG_formatKarma,
-                    "party":         RPG_formatParty,
-                    "help":          RPG_formatHelp
-                };
+            const commands = {
+                "stats":         RPG_formatStats,
+                "skills":        RPG_formatSkills,
+                "inventory":     RPG_formatInventory,
+                "inv":           RPG_formatInventory,
+                "quests":        RPG_formatQuests,
+                "quest":         RPG_formatQuests,
+                "titles":        RPG_formatTitles,
+                "title":         RPG_formatTitles,
+                "achievements":  RPG_formatAchievements,
+                "ach":           RPG_formatAchievements,
+                "karma":         RPG_formatKarma,
+                "party":         RPG_formatParty,
+                "help":          RPG_formatHelp
+            };
 
-                const handler = commands[cmd];
-                if (handler) {
-                    const panel = handler();
-                    // Inject panel as mandatory output instruction.
-                    // Placed at the very bottom of context for maximum influence.
-                    text = text.trimEnd() + "\n\n[MANDATORY DISPLAY: Output ONLY the following text, verbatim, nothing else, no story continuation:]\n" + panel;
-                    return { text, stop };
-                }
+            const handler = commands[cmd];
+            if (handler) {
+                const panel = handler();
+                // Inject at the very bottom of context — maximum AI influence
+                // Clear the action from state so it doesn't fire next turn
+                state.RPG.currentAction = "";
+                text = text.trimEnd() + "\n\n[SYSTEM OVERRIDE: Output ONLY the following text exactly as written. Do not add story. Do not add commentary. Output nothing else.]\n" + panel;
+                return { text, stop };
             }
         }
     }
+
+    // Clear the stored action after each turn
+    state.RPG.currentAction = "";
 
     // ── FIRST TURN DETECTION ─────────────────────────────────────
     if (!state.RPG.setup.complete) {
