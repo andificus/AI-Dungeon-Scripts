@@ -5,15 +5,19 @@ const modifier = (text) => {
     if (stop === true) return { text, stop };
     if (!state.RPG) return { text, stop };
 
-    // ── FIRST TURN DETECTION — runs before everything else ───────
-    // Must run before command handling so panels show correct data
+    // ── FIRST TURN DETECTION ─────────────────────────────────────
     if (!state.RPG.setup.complete) {
         RPG_detectFromContext(text);
     }
 
+    // ── UPDATE STATS STORY CARD ──────────────────────────────────
+    // Keeps the Status Screen card current every turn.
+    // The card auto-injects when /stats appears in recent story.
+    RPG_updateStatsCard();
+
     // ── SLASH COMMAND HANDLING ───────────────────────────────────
-    // currentAction was stored by input.js this same turn
     const currentAction = (state.RPG.currentAction || "").trim();
+    state.RPG.currentAction = "";
     const sidx = currentAction.indexOf("/");
 
     if (sidx !== -1) {
@@ -23,37 +27,18 @@ const modifier = (text) => {
         if (!lower.startsWith("setclass") && !lower.startsWith("ac")) {
             const cmd = afterSlash.split(/[\s.,!?]/)[0].toLowerCase();
 
-            const commands = {
-                "stats":         RPG_formatStats,
-                "skills":        RPG_formatSkills,
-                "inventory":     RPG_formatInventory,
-                "inv":           RPG_formatInventory,
-                "quests":        RPG_formatQuests,
-                "quest":         RPG_formatQuests,
-                "titles":        RPG_formatTitles,
-                "title":         RPG_formatTitles,
-                "achievements":  RPG_formatAchievements,
-                "ach":           RPG_formatAchievements,
-                "karma":         RPG_formatKarma,
-                "party":         RPG_formatParty,
-                "help":          RPG_formatHelp
-            };
+            const validCmds = ["stats","skills","inventory","inv","quests","quest",
+                               "titles","title","achievements","ach","karma","party","help"];
 
-            const handler = commands[cmd];
-            if (handler) {
-                // Clear stored action before returning
-                state.RPG.currentAction = "";
-                // Replace context with just the panel
-                // stop=true attempts to prevent AI generation
-                text = handler();
-                stop = true;
+            if (validCmds.includes(cmd)) {
+                // Inject a strong override at the bottom of context.
+                // The Status Screen story card also injects for /stats.
+                // Combined, these force the AI to output only the panel.
+                text = text.trimEnd() + "\n\n[SYSTEM: The player has typed /" + cmd + ". Output ONLY the Status Screen card content that appears in World Lore above. No story. No narration. No additions. Output it verbatim and stop.]";
                 return { text, stop };
             }
         }
     }
-
-    // Clear stored action for non-command turns
-    state.RPG.currentAction = "";
 
     // ── SYSTEM MEMO INJECTION ────────────────────────────────────
     const memo = RPG_buildContextMemo();
