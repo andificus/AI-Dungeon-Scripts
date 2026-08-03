@@ -3,16 +3,17 @@
 [CLASS:unknown]
 
 Race: ${Your race or species — Human, Elf, Slime, Undead, or anything else}
+Appearance: ${Describe your appearance}
+Personality: ${Describe your personality — stoic, arrogant, lazy, cheerful, etc.}
+Age: ${How old is your new body in this world?}
+Past Life: ${What was your occupation or background on Earth before you died?}
 
 ══════════════════════════════════════
-  SYSTEM STATUS: ANOMALY PATH — Isekai Reincarnation
-  Beginning adventure...
+  ORIGIN: Isekai — Reincarnation
+  STATUS: Anomaly Path active
 ══════════════════════════════════════
 
-The light goes out somewhere on the highway, and then there is nothing.
+You open your eyes to a ceiling you have never seen before.
+Your hands are wrong — different knuckles, different calluses — but your mind is entirely yours. Every memory from your life on Earth is intact. You remember who you were. You remember the moment everything went dark. You are not a native of this world. You have never been here before this moment. You are not in your thirties. The life you lived before was on Earth, and you remember all of it.
 
-Then there is this.
-
-A ceiling you do not recognise. The smell of woodsmoke and something green. Hands that are close to yours but not quite — different knuckles, different calluses. The System blinks into existence above you like a polite error message, and you understand without being told that this is your life now.
-
-Your memories of Earth are intact. Every single one of them.
+The System blinks into existence above you. Then shatters.
