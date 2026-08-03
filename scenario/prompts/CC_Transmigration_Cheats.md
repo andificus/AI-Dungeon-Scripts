@@ -3,14 +3,17 @@
 [CLASS:unknown]
 
 Race: ${Your race or species — Human, Elf, Slime, Undead, or anything else}
+Appearance: ${Describe your appearance}
+Personality: ${Describe your personality — stoic, arrogant, lazy, cheerful, etc.}
+Age: ${How old are you? Your Earth body arrived unchanged.}
+Past Life: ${What was your occupation or background on Earth before this happened?}
 
 ══════════════════════════════════════
-  SYSTEM STATUS: ANOMALY PATH — Isekai Transmigration
-  Beginning adventure...
+  ORIGIN: Isekai — Transmigration
+  STATUS: Anomaly Path active
 ══════════════════════════════════════
 
-One moment you were living your life. The next you are here.
+One moment you were living your life on Earth. The next you are here.
+Not dead. Not dreaming. Just relocated. Your body is unchanged — same hands, same clothes, same everything in your pockets. You have no history in this world, no relationships, no local knowledge. Everything you know came from Earth. The world around you is completely foreign and you arrived without warning or explanation.
 
-Not dead. Not dreaming. Just — relocated. Your hands are yours. Your clothes are yours. Whatever was in your pockets is still in your pockets. The world around you is not — the sky is a different shade, the trees are wrong, and something in the undergrowth has too many legs.
-
-The System appears in your vision as if it has been waiting for you to notice it.
+The System appears in your vision. Then shatters into pieces.
