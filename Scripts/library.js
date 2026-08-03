@@ -8861,8 +8861,12 @@ state.RPG = RPG_merge(state.RPG || {}, {
     commandOutput: null
 });
 
-// var hoists RPG to global scope in AID's eval environment
-var RPG = state.RPG;
+// RPG is always the current state — refreshed via getter each access
+Object.defineProperty(
+    (typeof globalThis !== 'undefined' ? globalThis : this),
+    'RPG',
+    { get() { return state.RPG; }, configurable: true }
+);
 
 // ================================================================
 // FIRST-TURN DETECTION
