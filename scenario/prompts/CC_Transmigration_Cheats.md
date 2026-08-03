@@ -1,8 +1,8 @@
 [CHEATS:anomaly+sage]
 [ORIGIN:isekai_transmigration]
+[RACE:human]
 [CLASS:unknown]
 
-Race: ${Your race or species — Human, Elf, Slime, Undead, or anything else}
 Appearance: ${Describe your appearance}
 Personality: ${Describe your personality — stoic, arrogant, lazy, cheerful, etc.}
 Age: ${How old are you? Your Earth body arrived unchanged.}
