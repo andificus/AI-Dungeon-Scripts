@@ -9708,4 +9708,25 @@ function RPG_stripSystemTags(text) {
         .trimEnd();
 }
 
+// ── Stats story card updater ─────────────────────────────────────
+// Updates a Status Screen story card every turn.
+// Card auto-injects via AID's card system when /stats is in recent story.
+
+function RPG_updateStatsCard() {
+    if (!state.RPG || !state.RPG.setup.complete) return;
+    const entry = RPG_formatStats();
+    if (!entry) return;
+    let card = storyCards.find(c => c.title && c.title.toLowerCase() === "status screen");
+    if (!card) {
+        storyCards.push({
+            title: "Status Screen",
+            entry: entry.slice(0, 990),
+            keys:  "/stats,stats,check stats,view stats,status screen",
+            type:  "other"
+        });
+    } else {
+        card.entry = entry.slice(0, 990);
+    }
+}
+
 // ── End of System Update Engine ──────────────────────────────────
