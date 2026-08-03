@@ -8858,7 +8858,8 @@ state.RPG = RPG_merge(state.RPG || {}, {
     karma: 0,
     companions: [], factions: [], bestiary: [],
     notifications: [],
-    commandOutput: null
+    commandOutput: null,
+    currentAction: ""
 });
 
 // RPG is always the current state — refreshed via getter each access
