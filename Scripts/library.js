@@ -8861,7 +8861,8 @@ state.RPG = RPG_merge(state.RPG || {}, {
     commandOutput: null
 });
 
-const RPG = state.RPG;
+// Make RPG globally accessible across all script tabs
+globalThis.RPG = state.RPG;
 
 // ================================================================
 // FIRST-TURN DETECTION
