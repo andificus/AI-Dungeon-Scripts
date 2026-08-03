@@ -1,14 +1,12 @@
 // Your "Context" tab should look like this
 InnerSelf("context");
 const modifier = (text) => {
-    // state is always accessible — create local RPG alias
-    const RPG = state.RPG;
-    if (!RPG) return { text, stop };
 
     if (stop === true) return { text, stop };
+    if (!state.RPG) return { text, stop };
 
     // ── FIRST TURN DETECTION ─────────────────────────────────────
-    if (!RPG.setup.complete) {
+    if (!state.RPG.setup.complete) {
         RPG_detectFromContext(text);
     }
 
