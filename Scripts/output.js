@@ -1,9 +1,8 @@
 // Your "Output" tab should look like this
 InnerSelf("output");
 const modifier = (text) => {
-    // state is always accessible — create local RPG alias
-    const RPG = state.RPG;
-    if (!RPG) return { text };
+
+    if (!state.RPG) return { text };
 
     // ── TAG PROCESSING ───────────────────────────────────────────
     if (text.includes("[LOOT:")) {
@@ -36,9 +35,9 @@ const modifier = (text) => {
     }
 
     // ── COMMAND OUTPUT ───────────────────────────────────────────
-    if (RPG.commandOutput) {
-        const panel = RPG.commandOutput;
-        RPG.commandOutput = null;
+    if (state.RPG.commandOutput) {
+        const panel = state.RPG.commandOutput;
+        state.RPG.commandOutput = null;
         return { text: panel };
     }
 
