@@ -1,20 +1,20 @@
 // Your "Input" tab should look like this
 InnerSelf("input");
 const modifier = (text) => {
+    // state is always accessible — create local RPG alias
+    const RPG = state.RPG;
+    if (!RPG) return { text };
 
     const trimmed = text.trim();
-    const lower   = trimmed.toLowerCase();
 
     // ── SLASH COMMANDS ───────────────────────────────────────────
-    // Detect /command anywhere in the input text.
-    // In AID's Do mode the player's input gets prefixed with "You "
-    // so "/stats" becomes "You /stats." — we scan for "/" anywhere.
+    // Scan for "/" anywhere — handles Do mode ("You /stats")
+    // and Story mode ("/stats") equally
     const slashIdx = trimmed.indexOf("/");
     if (slashIdx !== -1) {
-        // Extract everything after the slash
         const afterSlash = trimmed.slice(slashIdx + 1).trimEnd().replace(/[.,!?]+$/, "");
 
-        // /setclass ClassName — records class after in-game crystal reveal
+        // /setclass ClassName
         if (afterSlash.toLowerCase().startsWith("setclass ")) {
             const className = afterSlash.slice(9).trim();
             if (className) {
@@ -29,7 +29,6 @@ const modifier = (text) => {
             }
         }
 
-        // Simple command — just the word after /
         const cmd = afterSlash.split(/[\s.,!?]/)[0].toLowerCase();
 
         const commands = {
@@ -53,7 +52,6 @@ const modifier = (text) => {
             RPG.commandOutput = handler();
             return { text: "\u200B" };
         }
-        // Unrecognised /command — pass through (keeps /ac working)
     }
 
     return { text };
