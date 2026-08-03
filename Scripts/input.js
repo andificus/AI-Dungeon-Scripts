@@ -1,9 +1,12 @@
 // Your "Input" tab should look like this
 InnerSelf("input");
 const modifier = (text) => {
-    // Slash commands are handled in output.js via history inspection.
-    // We do NOT intercept here so the original text is preserved in history.
-    // The only exception is /setclass which needs to update state immediately.
+
+    // Store the current raw action so context.js can read it
+    // (history[last] in context is the PREVIOUS action, not current)
+    if (state.RPG) {
+        state.RPG.currentAction = text.trim();
+    }
 
     const trimmed = text.trim();
     const slashIdx = trimmed.indexOf("/");
