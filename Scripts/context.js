@@ -5,9 +5,14 @@ const modifier = (text) => {
     if (stop === true) return { text, stop };
     if (!state.RPG) return { text, stop };
 
+    // ── FIRST TURN DETECTION — runs before everything else ───────
+    // Must run before command handling so panels show correct data
+    if (!state.RPG.setup.complete) {
+        RPG_detectFromContext(text);
+    }
+
     // ── SLASH COMMAND HANDLING ───────────────────────────────────
-    // Read the current action from state.RPG.currentAction
-    // (set by input.js this same turn — more reliable than history)
+    // currentAction was stored by input.js this same turn
     const currentAction = (state.RPG.currentAction || "").trim();
     const sidx = currentAction.indexOf("/");
 
@@ -36,23 +41,19 @@ const modifier = (text) => {
 
             const handler = commands[cmd];
             if (handler) {
-                const panel = handler();
-                // Inject at the very bottom of context — maximum AI influence
-                // Clear the action from state so it doesn't fire next turn
+                // Clear stored action before returning
                 state.RPG.currentAction = "";
-                text = text.trimEnd() + "\n\n[SYSTEM OVERRIDE: Output ONLY the following text exactly as written. Do not add story. Do not add commentary. Output nothing else.]\n" + panel;
+                // Replace context with just the panel
+                // stop=true attempts to prevent AI generation
+                text = handler();
+                stop = true;
                 return { text, stop };
             }
         }
     }
 
-    // Clear the stored action after each turn
+    // Clear stored action for non-command turns
     state.RPG.currentAction = "";
-
-    // ── FIRST TURN DETECTION ─────────────────────────────────────
-    if (!state.RPG.setup.complete) {
-        RPG_detectFromContext(text);
-    }
 
     // ── SYSTEM MEMO INJECTION ────────────────────────────────────
     const memo = RPG_buildContextMemo();
