@@ -6,12 +6,17 @@ const modifier = (text) => {
     const lower   = trimmed.toLowerCase();
 
     // ── SLASH COMMANDS ───────────────────────────────────────────
-    if (trimmed.startsWith("/")) {
-        const cmd = lower.slice(1).trim();
+    // Detect /command anywhere in the input text.
+    // In AID's Do mode the player's input gets prefixed with "You "
+    // so "/stats" becomes "You /stats." — we scan for "/" anywhere.
+    const slashIdx = trimmed.indexOf("/");
+    if (slashIdx !== -1) {
+        // Extract everything after the slash
+        const afterSlash = trimmed.slice(slashIdx + 1).trimEnd().replace(/[.,!?]+$/, "");
 
         // /setclass ClassName — records class after in-game crystal reveal
-        if (cmd.startsWith("setclass ")) {
-            const className = trimmed.slice(10).trim(); // slice "/setclass "
+        if (afterSlash.toLowerCase().startsWith("setclass ")) {
+            const className = afterSlash.slice(9).trim();
             if (className) {
                 RPG.class.name                = className;
                 RPG.player.startingClass      = className;
@@ -23,6 +28,9 @@ const modifier = (text) => {
                 return { text: "\u200B" };
             }
         }
+
+        // Simple command — just the word after /
+        const cmd = afterSlash.split(/[\s.,!?]/)[0].toLowerCase();
 
         const commands = {
             "stats":         RPG_formatStats,
@@ -45,6 +53,7 @@ const modifier = (text) => {
             RPG.commandOutput = handler();
             return { text: "\u200B" };
         }
+        // Unrecognised /command — pass through (keeps /ac working)
     }
 
     return { text };
