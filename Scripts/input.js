@@ -1,30 +1,25 @@
 // Your "Input" tab should look like this
 InnerSelf("input");
 const modifier = (text) => {
-    // state is always accessible — create local RPG alias
-    const RPG = state.RPG;
-    if (!RPG) return { text };
 
     const trimmed = text.trim();
 
     // ── SLASH COMMANDS ───────────────────────────────────────────
-    // Scan for "/" anywhere — handles Do mode ("You /stats")
-    // and Story mode ("/stats") equally
     const slashIdx = trimmed.indexOf("/");
     if (slashIdx !== -1) {
         const afterSlash = trimmed.slice(slashIdx + 1).trimEnd().replace(/[.,!?]+$/, "");
+        const lower = afterSlash.toLowerCase();
 
         // /setclass ClassName
-        if (afterSlash.toLowerCase().startsWith("setclass ")) {
+        if (lower.startsWith("setclass ")) {
             const className = afterSlash.slice(9).trim();
-            if (className) {
-                RPG.class.name                = className;
-                RPG.player.startingClass      = className;
-                RPG.player.classRevealPending = false;
-                RPG_notify(RPG_HR);
-                RPG_notify(`⚔  CLASS REGISTERED: ${className}`);
-                RPG_notify("Your stat screen now reflects your true class.");
-                RPG_notify(RPG_HR);
+            if (className && state.RPG) {
+                state.RPG.class.name                = className;
+                state.RPG.player.startingClass      = className;
+                state.RPG.player.classRevealPending = false;
+                state.RPG.notifications.push(RPG_HR);
+                state.RPG.notifications.push(`⚔  CLASS REGISTERED: ${className}`);
+                state.RPG.notifications.push(RPG_HR);
                 return { text: "\u200B" };
             }
         }
@@ -48,8 +43,8 @@ const modifier = (text) => {
         };
 
         const handler = commands[cmd];
-        if (handler) {
-            RPG.commandOutput = handler();
+        if (handler && state.RPG) {
+            state.RPG.commandOutput = handler();
             return { text: "\u200B" };
         }
     }
